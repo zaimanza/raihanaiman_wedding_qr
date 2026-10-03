@@ -1,0 +1,5 @@
+export const MAX_WISH_LENGTH = 800;
+
+export function normalizeWish(value: string): string {
+  return value.normalize('NFKC').replace(/\r\n?/g, '\n').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g, '').replace(/\t/g, ' ').trim();
+}

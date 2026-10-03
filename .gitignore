@@ -1,0 +1,26 @@
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+.vite/
+
+# Local and deployment secrets; only the blank template belongs in Git
+.env
+.env.*
+!.env.example
+.vercel/
+
+# Test artifacts and local diagnostics
+playwright-report/
+test-results/
+output/
+.playwright-cli/
+*.log
+*.tsbuildinfo
+
+# Editor and operating-system files
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.local

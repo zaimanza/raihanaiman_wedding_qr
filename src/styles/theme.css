@@ -1,0 +1,62 @@
+:root {
+  color-scheme: light;
+  --paper: #f7f6ef;
+  --paper-soft: #efefe4;
+  --surface: #fffef9;
+  --ink: #283c30;
+  --muted: #697361;
+  --faint: #8a917e;
+  --line: #dce0d1;
+  --accent: #354f3f;
+  --accent-hover: #263f30;
+  --on-accent: #fffef3;
+  --focus: #8f9e72;
+  --botanical: #7f916e;
+  --gold: #a59161;
+  --error: #864833;
+  --error-bg: #f7eee7;
+  --shadow: rgb(39 53 31 / 10%);
+  --footer-bg: rgb(247 246 239 / 94%);
+  --success-bg: rgb(247 246 239 / 97%);
+  --camera-bg: #17251e;
+  --camera-ink: #f8f5e7;
+  --camera-muted: #d8decc;
+  --camera-botanical: #e0e5cc;
+  --camera-glass: rgb(24 39 30 / 33%);
+  --camera-glass-border: rgb(248 245 231 / 24%);
+  --camera-shade-clear: rgb(0 0 0 / 0%);
+  --camera-shade-light: rgb(10 19 12 / 25%);
+  --camera-shade-deep: rgb(6 13 8 / 76%);
+  --camera-state-bg: rgb(23 37 30 / 82%);
+  --camera-glow: rgb(162 179 118 / 14%);
+  --camera-notice-bg: rgb(10 20 14 / 84%);
+  --shutter-shadow: rgb(0 0 0 / 18%);
+  --shutter-white: #fffcf1;
+  --shutter-line: rgb(255 252 241 / 78%);
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Iowan Old Style', 'Baskerville', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --paper: #18251e;
+    --paper-soft: #202e24;
+    --surface: #233329;
+    --ink: #f2f1e3;
+    --muted: #bdc6b0;
+    --faint: #a7b29a;
+    --line: #40503e;
+    --accent: #d7e0c4;
+    --accent-hover: #e4ebd5;
+    --on-accent: #253b2c;
+    --focus: #b5c893;
+    --botanical: #a3b48e;
+    --gold: #c5b582;
+    --error: #edbca9;
+    --error-bg: #3b2c26;
+    --shadow: rgb(0 0 0 / 20%);
+    --footer-bg: rgb(24 37 30 / 94%);
+    --success-bg: rgb(24 37 30 / 97%);
+  }
+}
