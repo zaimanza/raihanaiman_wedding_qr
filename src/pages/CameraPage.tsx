@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { WeddingFrame } from '../components/WeddingFrame';
+import { Botanical } from '../components/Botanical';
 import { Icon } from '../components/Icon';
 import { usePhoto } from '../context/PhotoContext';
 import { useCamera } from '../hooks/useCamera';
@@ -13,7 +13,6 @@ export function CameraPage() {
   const [capturing, setCapturing] = useState(false);
   const [captureError, setCaptureError] = useState('');
   const captureLock = useRef(false);
-  const frameRef = useRef<HTMLImageElement>(null);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -28,8 +27,7 @@ export function CameraPage() {
     setCapturing(true);
     setCaptureError('');
     try {
-      if (!frameRef.current) throw new Error('Wedding frame is not ready');
-      const blob = await capturePhoto(videoRef.current, mirrored, frameRef.current);
+      const blob = await capturePhoto(videoRef.current, mirrored);
       if (!mounted.current) return;
       savePhoto(blob);
       navigate('/summary');
@@ -45,7 +43,12 @@ export function CameraPage() {
     <main className={`camera-page${capturing ? ' is-capturing' : ''}`} aria-label="Wedding camera">
       <video ref={videoRef} className={`camera-preview${mirrored ? ' is-mirrored' : ''}`} autoPlay playsInline muted onLoadedData={onVideoReady} onCanPlay={onVideoReady} aria-label="Live camera preview" />
       <div className="camera-shade" aria-hidden="true" />
-      <WeddingFrame imageRef={frameRef} />
+      <Botanical className="camera-botanical camera-botanical-top" />
+      <Botanical className="camera-botanical camera-botanical-bottom" />
+      <div className="camera-wedding-title" aria-hidden="true">
+        <span>Raihan &amp; Aiman</span>
+        <small>Wedding · 11 Oct 2026</small>
+      </div>
       <div className="camera-specks" aria-hidden="true"><i /><i /><i /></div>
 
       {status !== 'ready' && (

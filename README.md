@@ -170,7 +170,7 @@ See [Vite on Vercel](https://vercel.com/docs/frameworks/frontend/vite), [environ
 
 ## Upload validation and limits
 
-The client saves the centered crop visible in the camera preview, preserves that composition's aspect ratio, and limits the long edge to 1920px without upscaling. It composites the same lightweight SVG wedding frame shown over the preview into the photo: Raihan & Aiman Wedding lettering, botanical flowers, and a cat in the lower-right corner. These decorations are part of the JPEG visible in Summary and sent to Telegram; camera controls and animated light specks are not included. Front-camera capture matches the mirrored preview while the lettering and artwork remain upright and readable.
+The client saves the centered crop visible in the camera preview, preserves that composition's aspect ratio, and limits the long edge to 1920px without upscaling. The original botanical corners and centered Raihan & Aiman Wedding · 11 Oct 2026 text are preview decorations only. Flowers, wedding text, animated light specks, and camera controls are absent from the saved JPEG shown in Summary and sent to Telegram. Front-camera capture matches the mirrored camera image.
 
 It encodes JPEG at 0.86 quality, trying 0.82 and then 0.78 only when necessary to meet the size limit. If even those settings exceed 3 MiB, capture fails gracefully and asks the guest to retry. Canvas captures the displayed camera frame, so uploaded photos do not carry phone-file EXIF orientation metadata.
 

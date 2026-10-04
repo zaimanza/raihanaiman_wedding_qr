@@ -14,8 +14,11 @@ button svg { width: 22px; height: 22px; flex-shrink: 0; }
 .camera-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .camera-preview.is-mirrored { transform: scaleX(-1); }
 .camera-shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to bottom, var(--camera-shade-light), var(--camera-shade-clear) 20%, var(--camera-shade-clear) 60%, var(--camera-shade-deep)); }
-.wedding-frame { position: absolute; inset: 0; z-index: 2; pointer-events: none; --frame-safe-top: env(safe-area-inset-top, 0px); --frame-safe-bottom: env(safe-area-inset-bottom, 0px); --frame-safe-left: env(safe-area-inset-left, 0px); --frame-safe-right: env(safe-area-inset-right, 0px); }
-.wedding-frame-art { display: block; width: 100%; height: 100%; user-select: none; }
+.camera-botanical { z-index: 2; color: var(--camera-botanical); width: clamp(62px, 16vw, 92px); opacity: .44; }
+.camera-botanical-top { top: calc(14px + env(safe-area-inset-top)); left: calc(13px + env(safe-area-inset-left)); transform: rotate(175deg); }
+.camera-botanical-bottom { right: calc(9px + env(safe-area-inset-right)); bottom: calc(136px + env(safe-area-inset-bottom)); transform: rotate(-15deg); opacity: .32; }
+.camera-wedding-title { position: absolute; z-index: 2; top: calc(16px + env(safe-area-inset-top)); left: calc(92px + env(safe-area-inset-left)); right: calc(92px + env(safe-area-inset-right)); display: flex; flex-direction: column; align-items: center; text-align: center; font: normal clamp(18px, 4.8vw, 26px)/1.25 var(--font-display); color: var(--camera-ink); text-shadow: 0 1px 4px var(--camera-bg); pointer-events: none; }
+.camera-wedding-title small { margin-top: 5px; font: 500 10px/1.5 var(--font-ui); letter-spacing: .8px; opacity: .9; }
 .camera-specks { position: absolute; inset: 0; pointer-events: none; }
 .camera-specks i { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: var(--camera-ink); box-shadow: 0 0 8px 2px var(--camera-glow); opacity: .35; animation: drift 9s ease-in-out infinite alternate; }
 .camera-specks i:nth-child(1) { left: 9%; top: 28%; }
@@ -97,6 +100,7 @@ button svg { width: 22px; height: 22px; flex-shrink: 0; }
 @media (max-height: 600px) and (orientation: landscape) {
   .camera-controls { left: auto; right: env(safe-area-inset-right); top: 50%; bottom: auto; transform: translateY(-50%); display: flex; flex-direction: column; gap: 18px; padding: 18px; }
   .camera-state { padding: 30px 135px 30px 30px; }
+  .camera-botanical-bottom { bottom: 12px; right: calc(120px + env(safe-area-inset-right)); }
   .camera-notice { bottom: 20px; right: 135px; }
   .camera-shade { background: linear-gradient(to right, var(--camera-shade-clear) 55%, var(--camera-shade-deep)); }
 }
