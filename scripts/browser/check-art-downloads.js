@@ -3,6 +3,7 @@ async (page) => {
   const assert = (condition,label) => {if (!condition) throw new Error(label); passed.push(label);};
   await page.addInitScript(() => {
     const blobs = new Map();
+    window.__artBlobs = blobs;
     const create = URL.createObjectURL.bind(URL);
     URL.createObjectURL = blob => {const url = create(blob); blobs.set(url,blob); return url;};
     const click = HTMLAnchorElement.prototype.click;
@@ -31,7 +32,7 @@ async (page) => {
     }
     await page.waitForURL('**/summary');
     const previewSrc = await page.locator('.captured-photo').getAttribute('src');
-    await page.evaluate(async src => {window.__previewArt = await (await fetch(src)).blob();},previewSrc);
+    await page.evaluate(src => {window.__previewArt = window.__artBlobs.get(src);},previewSrc);
     await page.getByRole('button',{name:kind === 'photo' ? 'Enlarge photo' : 'Enlarge video',exact:true}).click();
     assert(await page.locator('dialog .photo-preview-image').getAttribute('src') === previewSrc, `${kind}: card and enlarged modal use the same decorated media`);
     if (kind === 'video') await page.waitForFunction(() => {const v=document.querySelector('dialog video');return v && v.readyState>=2 && !v.paused;});
