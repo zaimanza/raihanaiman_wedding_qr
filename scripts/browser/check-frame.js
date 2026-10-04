@@ -29,19 +29,19 @@ async (page) => {
       // The simulated camera has no pale pixels here. Lettering/flowers would introduce them.
       for (let y = 0; y < canvas.height * .12; y++) for (let x = 0; x < canvas.width; x++) {
         const i = (y * canvas.width + x) * 4;
-        if (data[i] > 180 && data[i + 1] > 180 && data[i + 2] > 160) topMarks++;
+        if (data[i] > 140 && data[i + 1] > 145 && data[i + 2] > 130) topMarks++;
       }
-      for (let y = canvas.height * .62 | 0; y < canvas.height * .84; y++) for (let x = canvas.width * .65 | 0; x < canvas.width; x++) {
+      for (let y = canvas.height * .8 | 0; y < canvas.height; y++) for (let x = canvas.width * .65 | 0; x < canvas.width; x++) {
         const i = (y * canvas.width + x) * 4;
-        if (data[i] > 180 && data[i + 1] > 180 && data[i + 2] > 160) cornerMarks++;
+        if (data[i] > 140 && data[i + 1] > 145 && data[i + 2] > 130) cornerMarks++;
       }
       const blob = await (await fetch(photo.src)).blob();
       return { topMarks, cornerMarks, width: canvas.width, height: canvas.height, bytes: blob.size, type: blob.type };
     });
-    assert(pixels.topMarks === 0, `${facing}: saved JPEG has no wedding title, date, or top-left flowers`);
-    assert(pixels.cornerMarks === 0, `${facing}: saved JPEG has no lower-right floral artwork`);
-    assert(pixels.type === 'image/jpeg' && pixels.bytes <= 3 * 1024 * 1024 && Math.max(pixels.width, pixels.height) <= 2560, `${facing}: clean photo respects JPEG and upload limits`);
-    await page.screenshot({ path: `output/playwright/preview-only-summary-${facing}.png` });
+    assert(pixels.topMarks > 150, `${facing}: photo preview includes wedding title, date and top-left flowers`);
+    assert(pixels.cornerMarks > 40, `${facing}: photo preview includes lower-right floral artwork`);
+    assert(pixels.type === 'image/jpeg' && pixels.bytes > 0 && Math.max(pixels.width, pixels.height) <= 2560, `${facing}: decorated preview respects JPEG and photo resolution`);
+    await page.screenshot({ path: `output/playwright/decorated-summary-${facing}.png` });
     await page.getByRole('button', { name: 'Retake' }).click();
     await ready();
   }

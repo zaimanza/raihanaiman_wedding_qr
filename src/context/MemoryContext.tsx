@@ -25,7 +25,7 @@ export function MemoryProvider({ children }: { children: ReactNode }) {
 
   const saveMedia = useCallback((blob: Blob, kind: MediaKind, downloadBlob: Blob) => {
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
-    const previewUrl = URL.createObjectURL(blob);
+    const previewUrl = URL.createObjectURL(downloadBlob);
     urlRef.current = previewUrl;
     setMedia({ kind, blob, downloadBlob, previewUrl, submissionId: crypto.randomUUID() });
     setWish('');

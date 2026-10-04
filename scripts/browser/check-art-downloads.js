@@ -30,11 +30,23 @@ async (page) => {
       await page.mouse.down(); await page.waitForTimeout(3000); await page.mouse.up();
     }
     await page.waitForURL('**/summary');
+    const previewSrc = await page.locator('.captured-photo').getAttribute('src');
+    await page.evaluate(async src => {window.__previewArt = await (await fetch(src)).blob();},previewSrc);
+    await page.getByRole('button',{name:kind === 'photo' ? 'Enlarge photo' : 'Enlarge video',exact:true}).click();
+    assert(await page.locator('dialog .photo-preview-image').getAttribute('src') === previewSrc, `${kind}: card and enlarged modal use the same decorated media`);
+    if (kind === 'video') await page.waitForFunction(() => {const v=document.querySelector('dialog video');return v && v.readyState>=2 && !v.paused;});
+    await page.screenshot({path:`output/playwright/art-preview-${kind}.png`});
+    await page.getByRole('button',{name:`Close ${kind} preview`,exact:true}).click();
     const downloadEvent = page.waitForEvent('download');
     await page.getByRole('button',{name:'Send your wish',exact:true}).click();
     const downloaded = await downloadEvent;
     await downloaded.saveAs(`output/playwright/art-download-${kind}.${downloaded.suggestedFilename().split('.').at(-1)}`);
     await page.waitForFunction(() => window.__downloadedArt && window.__submittedClean);
+    assert(await page.evaluate(async () => {
+      const preview=new Uint8Array(await window.__previewArt.arrayBuffer());
+      const download=new Uint8Array(await window.__downloadedArt.arrayBuffer());
+      return preview.length===download.length && preview.every((byte,index)=>byte===download[index]);
+    }), `${kind}: preview contains the exact decorated download bytes`);
     const result = await page.evaluate(async kind => {
       async function frame(blob) {
         const url=URL.createObjectURL(blob);
