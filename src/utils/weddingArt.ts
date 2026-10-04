@@ -50,7 +50,7 @@ export async function decoratePhoto(blob: Blob): Promise<Blob> {
     ctx.drawImage(bitmap,0,0);
     art = weddingArt(canvas.width,canvas.height);
     ctx.drawImage(art,0,0);
-    return await new Promise<Blob>((resolve,reject) => canvas.toBlob(result => result ? resolve(result) : reject(new Error('Could not prepare your keepsake')), 'image/jpeg', .85));
+    return await new Promise<Blob>((resolve,reject) => canvas.toBlob(result => result ? resolve(result) : reject(new Error('Could not prepare your keepsake')), 'image/jpeg', .98));
   } finally {
     bitmap.close(); canvas.width = canvas.height = 0;
     if (art) art.width = art.height = 0;

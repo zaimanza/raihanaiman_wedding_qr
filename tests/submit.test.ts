@@ -60,13 +60,13 @@ describe('POST /api/submit', () => {
     expect(response.headers.get('cache-control')).toContain('no-store')
     expect(telegram).toHaveBeenCalledTimes(1)
     const [url, options] = telegram.mock.calls[0]!
-    expect(url).toBe(`https://api.telegram.org/bot${fakeToken}/sendDocument`)
+    expect(url).toBe(`https://api.telegram.org/bot${fakeToken}/sendPhoto`)
     expect(options?.method).toBe('POST')
     const outbound = options?.body as FormData
     expect(outbound.get('chat_id')).toBe('-1001234567890')
     expect(outbound.get('caption')).toContain('Love\nforever ❤️')
     expect(outbound.has('parse_mode')).toBe(false)
-    expect(Buffer.from(await (outbound.get('document') as Blob).arrayBuffer())).toEqual(photo)
+    expect(Buffer.from(await (outbound.get('photo') as Blob).arrayBuffer())).toEqual(photo)
   })
 
   it('converts a real WebM upload to sendVideo and keeps its wish as the caption', async () => {
@@ -144,7 +144,7 @@ describe('POST /api/submit', () => {
     const response = await post(request)
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({ ok: true })
-    expect((telegram.mock.calls[0]![1]?.body as FormData).get('document')).toMatchObject({ size: MAX_PHOTO_BYTES })
+    expect((telegram.mock.calls[0]![1]?.body as FormData).get('photo')).toMatchObject({ size: MAX_PHOTO_BYTES })
 
     const oversized = form()
     oversized.set('photo', new Blob([Buffer.concat([data, Buffer.from([1])])], { type: 'image/jpeg' }), 'over-limit.jpg')

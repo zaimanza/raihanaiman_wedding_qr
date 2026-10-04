@@ -4,7 +4,7 @@ import { weddingArt } from './weddingArt';
 export const HOLD_TO_RECORD_MS = 1000;
 export const MAX_RECORDING_MS = 60_000;
 export const MAX_VIDEO_BYTES = 4 * 1024 * 1024;
-const MAX_DOWNLOAD_BYTES = 24 * 1024 * 1024;
+const MAX_DOWNLOAD_BYTES = 80 * 1024 * 1024;
 
 export function recordingMimeType(): string | null {
   if (typeof MediaRecorder === 'undefined') return null;
@@ -64,7 +64,7 @@ export function recordVideo(video: HTMLVideoElement, mirrored: boolean): Recordi
   try {
     for (const [index, target] of [canvas,decorated].entries()) {
       const stream = target.captureStream(24); streams.push(stream);
-      recorders.push(new MediaRecorder(stream,{mimeType,videoBitsPerSecond: index === 0 ? 500_000 : 2_000_000}));
+      recorders.push(new MediaRecorder(stream,{mimeType,videoBitsPerSecond: index === 0 ? 500_000 : 8_000_000}));
     }
   } catch (error) { cleanup(); throw error; }
   const result = new Promise<{blob:Blob; downloadBlob:Blob}>((resolve,reject) => {
