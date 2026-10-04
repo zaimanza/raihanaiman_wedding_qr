@@ -10,7 +10,7 @@ async (page) => {
  assert(await page.evaluate(()=>!document.featurePolicy||document.featurePolicy.allowsFeature('microphone')),'deployment policy permits microphone access');
  await page.setViewportSize({width:390,height:844});
  await page.waitForFunction(()=>document.querySelector('.shutter')?.disabled===false);
- const hold=async()=>{const box=await page.locator('.shutter').boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.waitForTimeout(2800);await page.mouse.up();};
+ const hold=async(expectRecording=true)=>{const box=await page.locator('.shutter').boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();if(expectRecording) {await page.getByRole('button',{name:'Stop recording',exact:true}).waitFor();await page.waitForTimeout(1800);} else await page.waitForTimeout(1500);await page.mouse.up();};
  await hold();await page.waitForURL('**/summary');
  assert(await page.evaluate(()=>window.__testMicrophone.getTracks().every(t=>t.readyState==='ended')),'microphone stops when recording finishes');
  assert(await page.locator('.captured-photo').evaluate(v=>v.muted),'small looping card stays muted');
@@ -31,7 +31,7 @@ async (page) => {
  });
  assert(audio.every(a=>a.duration>1&&a.peak>.01),'both Telegram and decorated download contain decoded audible audio');
  await page.waitForFunction(()=>document.querySelector('.shutter')?.disabled===false);
- await page.evaluate(()=>{window.__microphoneDenied=true;});await hold();
+ await page.evaluate(()=>{window.__microphoneDenied=true;});await hold(false);
  await page.getByText(/Please allow microphone access/).waitFor();
  assert(await page.evaluate(()=>window.__testCameraTracks.at(-1).readyState==='live'),'microphone denial keeps camera available');
  await page.getByRole('button',{name:'Take photo',exact:true}).click();await page.waitForURL('**/summary');

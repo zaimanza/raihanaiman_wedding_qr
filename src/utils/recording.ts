@@ -8,7 +8,7 @@ const MAX_DOWNLOAD_BYTES = 80 * 1024 * 1024;
 
 export function recordingMimeType(): string | null {
   if (typeof MediaRecorder === 'undefined') return null;
-  return ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp8,opus', 'video/webm']
+  return ['video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4']
     .find(type => MediaRecorder.isTypeSupported(type)) ?? null;
 }
 
@@ -66,7 +66,7 @@ export function recordVideo(video: HTMLVideoElement, mirrored: boolean, micropho
     for (const [index, target] of [canvas,decorated].entries()) {
       const stream = target.captureStream(24); streams.push(stream);
       microphone.getAudioTracks().forEach(track => stream.addTrack(track));
-      recorders.push(new MediaRecorder(stream,{mimeType,videoBitsPerSecond: index === 0 ? 430_000 : 8_000_000, audioBitsPerSecond: index === 0 ? 48_000 : 96_000}));
+      recorders.push(new MediaRecorder(stream,{mimeType,videoBitsPerSecond: index === 0 ? 400_000 : 8_000_000, audioBitsPerSecond: index === 0 ? 64_000 : 96_000}));
     }
   } catch (error) { cleanup(); throw error; }
   const result = new Promise<{blob:Blob; downloadBlob:Blob}>((resolve,reject) => {
