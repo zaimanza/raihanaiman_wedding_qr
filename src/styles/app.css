@@ -54,14 +54,9 @@ button svg { width: 22px; height: 22px; flex-shrink: 0; }
 .retake-button:disabled { opacity: .5; }
 .couple-name { font: italic 18px var(--font-display); white-space: nowrap; }
 .couple-name span { color: var(--gold); padding: 0 3px; }
-.photo-frame { margin: 0; padding: 7px 7px 0; border: 1px solid var(--line); border-radius: 19px; background: var(--surface); box-shadow: 0 12px 32px var(--shadow); transform: rotate(-.65deg); }
-.captured-photo { display: block; width: 100%; max-height: min(56dvh, 560px); object-fit: contain; border-radius: 12px; background: var(--paper-soft); }
-.photo-frame figcaption { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 12px 8px 13px; font: italic 14px var(--font-display); color: var(--muted); }
-.photo-frame figcaption span { height: 1px; width: 22px; background: var(--line); }
-.wish-heading { margin: 30px 0 22px; }
+.photo-frame { width: fit-content; max-width: 100%; margin: 0 auto 22px; padding: 6px; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); box-shadow: 0 8px 24px var(--shadow); }
+.captured-photo { display: block; width: auto; height: auto; max-width: 100%; max-height: min(36vh, 320px); max-height: min(36dvh, 320px); object-fit: contain; border-radius: 9px; background: var(--paper-soft); }
 .eyebrow { display: block; font-size: 9px; font-weight: 600; letter-spacing: 2.2px; color: var(--muted); }
-.wish-heading h1 { font: normal clamp(26px, 6.6vw, 34px)/1.2 var(--font-display); letter-spacing: -.7px; margin: 7px 0 0; }
-.heading-star { display: inline-block; font-size: 23px; color: var(--gold); margin-left: 8px; vertical-align: middle; }
 .wish-field label { display: block; font-size: 12px; font-weight: 500; margin-bottom: 9px; }
 .wish-field label span { color: var(--muted); font-weight: 400; margin-left: 4px; }
 .wish-field textarea { display: block; width: 100%; min-height: 112px; max-height: 250px; resize: vertical; padding: 15px 16px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 13px; font-size: 16px; line-height: 1.65; transition: border-color .2s ease, box-shadow .2s ease; scroll-margin-bottom: 150px; }
@@ -80,8 +75,6 @@ button svg { width: 22px; height: 22px; flex-shrink: 0; }
 .submit-button:hover:not(:disabled) { background: var(--accent-hover); }
 .submit-button:active:not(:disabled) { transform: scale(.985); }
 .submit-button:disabled { opacity: .68; }
-.action-note { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 9px; color: var(--muted); font-size: 9px; letter-spacing: .25px; }
-.action-note svg { width: 11px; height: 11px; }
 .honeypot { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .success-overlay { position: fixed; z-index: 10; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px; text-align: center; background: var(--success-bg); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: arrive .3s ease-out; }
 .success-wreath { position: relative; height: 150px; width: 150px; display: grid; place-items: center; margin-bottom: 28px; }
@@ -94,7 +87,6 @@ button svg { width: 22px; height: 22px; flex-shrink: 0; }
 @media (min-width: 700px) {
   .summary-content { padding-top: calc(28px + env(safe-area-inset-top)); }
   .summary-topline { margin-bottom: 23px; }
-  .wish-heading { margin-top: 38px; }
   .camera-controls { padding-bottom: calc(34px + env(safe-area-inset-bottom)); }
 }
 @media (max-height: 600px) and (orientation: landscape) {

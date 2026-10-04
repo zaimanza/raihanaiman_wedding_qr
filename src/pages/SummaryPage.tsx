@@ -92,7 +92,7 @@ export function SummaryPage() {
   if (!photo) return null;
 
   return (
-    <main className="summary-page">
+    <main className="summary-page" aria-label="Your photo and wedding wish">
       <div className="summary-decoration" aria-hidden="true"><Botanical className="summary-botanical" /></div>
       <form className="summary-form" onSubmit={event => void submit(event)}>
         <div className="summary-content">
@@ -103,13 +103,7 @@ export function SummaryPage() {
 
           <figure className="photo-frame">
             <img className="captured-photo" src={photo.previewUrl} alt="Your captured wedding memory" />
-            <figcaption><span /> A little moment, forever <span /></figcaption>
           </figure>
-
-          <div className="wish-heading">
-            <span className="eyebrow">FROM YOU, WITH LOVE</span>
-            <h1>A wish for our forever<span className="heading-star" aria-hidden="true">✧</span></h1>
-          </div>
 
           <div className="wish-field">
             <label htmlFor="wish">Your wedding wish <span>(optional)</span></label>
@@ -128,7 +122,6 @@ export function SummaryPage() {
           <button className="submit-button" type="submit" disabled={phase !== 'idle' || !online || remaining > 0} aria-busy={phase === 'sending'}>
             {phase === 'sending' ? <><span className="spinner" /> Sending with love…</> : phase === 'success' ? <><Icon name="check" /> Sent with love</> : remaining > 0 ? <>Try again in {remaining}s</> : <><span>Send our wish</span><Icon name="send" /></>}
           </button>
-          <span className="action-note">A keepsake for the two of us <Icon name="heart" /></span>
         </div>
       </form>
 
