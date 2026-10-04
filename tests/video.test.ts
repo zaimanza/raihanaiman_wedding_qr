@@ -9,6 +9,15 @@ export function videoFixture(format: 'mp4' | 'webm' = 'webm'): Buffer {
 }
 
 describe('bounded video processing', () => {
+  it('preserves a full minute of video and caps longer footage at 60 seconds', async () => {
+    const input = execFileSync(ffmpeg!, ['-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'testsrc2=size=320x240:rate=24', '-t', '62', '-an', '-c:v', 'libx264', '-b:v', '200k', '-movflags', 'frag_keyframe+empty_moov', '-f', 'mp4', 'pipe:1'], {maxBuffer: MAX_PHOTO_BYTES});
+    const output = await prepareVideo(validateVideo(input, 'video/mp4'));
+    expect(output.length).toBeLessThan(MAX_PHOTO_BYTES);
+    const progress = execFileSync(ffmpeg!, ['-hide_banner', '-loglevel', 'error', '-i', 'pipe:0', '-progress', 'pipe:1', '-f', 'null', '-'], { input: output }).toString();
+    const times = [...progress.matchAll(/out_time_us=(\d+)/g)].map(match => Number(match[1]));
+    expect(times.at(-1)).toBeGreaterThanOrEqual(59_000_000);
+    expect(times.at(-1)).toBeLessThanOrEqual(60_100_000);
+  }, 30_000);
   for (const format of ['mp4', 'webm'] as const) {
     it(`decodes actual ${format} footage and produces playable H.264 MP4`, async () => {
       const output = await prepareVideo(validateVideo(videoFixture(format), `video/${format}`));

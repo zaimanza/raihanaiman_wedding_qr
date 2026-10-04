@@ -16,7 +16,7 @@ export async function submitMemory(media: CapturedMedia, wish: string, website: 
   data.append('submissionId', media.submissionId);
   data.append('website', website);
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 55_000);
+  const timeout = setTimeout(() => controller.abort(), 70_000);
   try {
     const response = await fetch('/api/submit', {
       method: 'POST', body: data, credentials: 'same-origin', cache: 'no-store',

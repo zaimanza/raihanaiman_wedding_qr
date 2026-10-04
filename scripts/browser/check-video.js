@@ -37,7 +37,7 @@ async (page) => {
   await page.waitForTimeout(1000); await page.mouse.up();
   await page.waitForURL('**/summary');
   await page.locator('.captured-photo').evaluate(video => new Promise(resolve => { if (video.readyState >= 1) resolve(); else video.onloadedmetadata=resolve; }));
-  assert(await page.locator('.captured-photo').evaluate(video => video.tagName === 'VIDEO' && video.videoHeight <= 1080 && video.videoWidth <= 1080 && video.duration > 0), 'recording is an actual bounded-resolution playable video');
+  assert(await page.locator('.captured-photo').evaluate(video => video.tagName === 'VIDEO' && video.videoHeight <= 720 && video.videoWidth <= 720 && video.duration > 0), 'recording is an actual bounded-resolution playable video');
   const wish = page.getByRole('textbox',{name:'Your wedding wish',exact:true});
   await wish.fill('Video wish stays safe ♡');
   for (const scheme of ['light','dark']) {
@@ -88,8 +88,8 @@ async (page) => {
   bounds = await shutter.boundingBox();
   await page.mouse.move(bounds.x + bounds.width/2,bounds.y + bounds.height/2);
   await page.mouse.down();
-  await page.waitForURL('**/summary',{timeout:20000}); await page.mouse.up();
-  assert(await page.locator('.captured-photo').evaluate(video => video.tagName === 'VIDEO'), '15-second recording limit automatically opens summary');
+  await page.waitForURL('**/summary',{timeout:70000}); await page.mouse.up();
+  assert(await page.locator('.captured-photo').evaluate(video => video.tagName === 'VIDEO'), '60-second recording limit automatically opens summary');
   await page.reload(); await page.waitForURL('http://localhost:5173/');
   assert(await page.evaluate(() => localStorage.length === 0 && sessionStorage.length === 0), 'video stays in memory and refresh removes it');
   await page.unroute('**/api/submit');

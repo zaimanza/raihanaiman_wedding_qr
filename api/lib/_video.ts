@@ -28,10 +28,10 @@ export function prepareVideo(video: Video): Promise<Buffer> {
       '-hide_banner', '-loglevel', 'error', '-nostdin', '-max_alloc', '16777216',
       '-protocol_whitelist', 'pipe', '-f', video.mime === 'video/mp4' ? 'mov' : 'matroska',
       '-threads', '1', '-max_pixels', '8000000', '-i', 'pipe:0',
-      '-map', '0:v:0', '-an', '-t', '15', '-filter_threads', '1',
-      '-vf', 'scale=1080:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,fps=24',
+      '-map', '0:v:0', '-an', '-t', '60', '-filter_threads', '1',
+      '-vf', 'scale=720:720:force_original_aspect_ratio=decrease:force_divisible_by=2,fps=24',
       '-c:v', 'libx264', '-threads', '1', '-preset', 'veryfast', '-crf', '23',
-      '-maxrate', '1400k', '-bufsize', '1400k', '-pix_fmt', 'yuv420p',
+      '-maxrate', '300k', '-bufsize', '600k', '-pix_fmt', 'yuv420p',
       '-movflags', 'frag_keyframe+empty_moov+default_base_moof', '-f', 'mp4', 'pipe:1',
     ], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
     let finished = false
@@ -45,7 +45,7 @@ export function prepareVideo(video: Video): Promise<Buffer> {
       process.kill('SIGKILL')
       reject(new SubmissionError(422, 'INVALID_VIDEO', 'We couldn’t prepare this video. Please record it again ♡'))
     }
-    const timer = setTimeout(fail, 20_000)
+    const timer = setTimeout(fail, 30_000)
     timer.unref()
     process.on('error', fail)
     process.stdin.on('error', () => undefined) // Invalid input may close the decoder's pipe early.

@@ -16,7 +16,7 @@ A mobile-first wedding camera. Guests scan your QR code, capture a photo or shor
                          “Sent with love” → fresh camera
 ```
 
-The rear camera is preferred. Tap the shutter for a photo; hold it for at least one second to start a silent video, then release to finish. Videos stop automatically at 15 seconds or earlier if approaching the upload size limit. A camera switch appears when a second camera is available. Camera permission is the only device permission requested: recordings do not include microphone audio. Browsers without MediaRecorder/canvas recording still support photos.
+The rear camera is preferred. Tap the shutter for a photo; hold it for at least one second to start a silent video, then release to finish. Videos stop automatically at 60 seconds or earlier if approaching the upload size limit. A camera switch appears when a second camera is available. Camera permission is the only device permission requested: recordings do not include microphone audio. Browsers without MediaRecorder/canvas recording still support photos.
 
 The Summary route requires a captured photo or video in React memory. Direct entry, another tab, a bookmark, or refreshing `/summary` returns to `/`. Retake discards the draft. Failed uploads preserve the photo and wish so the guest can retry. Successful delivery starts a download of the photo/video, shows the success state for two seconds, clears the draft, and restarts the camera. The browser controls its Downloads/Save prompt; this does not automatically write to a phone’s Photos gallery. A manual Save control is also available during the success state. Video previews open a modal with native play/pause controls and a circular close button.
 
@@ -186,16 +186,16 @@ Telegram's published guidance advises roughly one message per second to a single
 
 ## Video processing
 
-The browser records the visible crop at up to a 1080px long edge and 24fps, targeting 1.4Mbps and a maximum of 15 seconds. The same memory-only draft and retry/navigation rules apply to photos and videos. The uploaded multipart field is either `photo` or `video`, never both.
+The browser records the visible crop at up to a 720px long edge and 24fps, targeting 0.3Mbps and a maximum of 60 seconds. The same memory-only draft and retry/navigation rules apply to photos and videos. The uploaded multipart field is either `photo` or `video`, never both.
 
-A server-only `ffmpeg-static` dependency decodes and normalizes videos into H.264 MP4 for Telegram’s `sendVideo`. This supports browsers that record WebM without sending guests a document attachment. Processing uses bounded stdin/stdout memory pipes, a 20-second deadline, no temporary files, and no external media URLs. The decoder restricts pixel count and the output duration, resolution, bitrate, and file size. Vercel includes the platform binary via `functions.includeFiles`; it is excluded from the frontend bundle. See [Telegram sendVideo](https://core.telegram.org/bots/api#sendvideo) and [ffmpeg-static](https://github.com/eugeneware/ffmpeg-static) for its binary and license details.
+A server-only `ffmpeg-static` dependency decodes and normalizes videos into H.264 MP4 for Telegram’s `sendVideo`. This supports browsers that record WebM without sending guests a document attachment. Processing uses bounded stdin/stdout memory pipes, a 30-second deadline, no temporary files, and no external media URLs. The decoder restricts pixel count and the output duration, resolution, bitrate, and file size. Vercel includes the platform binary via `functions.includeFiles`; it is excluded from the frontend bundle. See [Telegram sendVideo](https://core.telegram.org/bots/api#sendvideo) and [ffmpeg-static](https://github.com/eugeneware/ffmpeg-static) for its binary and license details.
 
 The automatic download runs only after a successful Telegram acknowledgement. On iPhone and other mobile browsers, the operating system may require a Save/Download confirmation. Test the venue’s target phones; browser behavior cannot guarantee silent saving into Photos.
 
 ## Before the wedding
 
 - Test iPhone Safari, Android Chrome, and Samsung Internet on the production HTTPS URL with real cameras.
-- Test tap versus hold (including cancellation and the 15-second limit), video play/pause, Telegram video delivery, automatic downloads, and front/rear switching, portrait/landscape rotation, short screens, keyboard visibility, safe-area padding, and widths near 375, 390, 412, and 430px.
+- Test tap versus hold (including cancellation and the 60-second limit), video play/pause, Telegram video delivery, automatic downloads, and front/rear switching, portrait/landscape rotation, short screens, keyboard visibility, safe-area padding, and widths near 375, 390, 412, and 430px.
 - Deny camera permission once, then verify the permission guidance and retry behavior. Check a device with no camera.
 - Retake a photo and confirm the old image/wish disappear. Refresh Summary and confirm it returns to the camera. Check browser Back/Forward.
 - Temporarily disconnect the network on Summary, submit, and verify the photo/wish survive the error. Reconnect and retry.

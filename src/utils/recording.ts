@@ -1,7 +1,7 @@
 import { getCaptureGeometry } from './image';
 
 export const HOLD_TO_RECORD_MS = 1000;
-export const MAX_RECORDING_MS = 15_000;
+export const MAX_RECORDING_MS = 60_000;
 export const MAX_VIDEO_BYTES = 3 * 1024 * 1024;
 
 export function recordingMimeType(): string | null {
@@ -23,7 +23,7 @@ export function recordVideo(video: HTMLVideoElement, mirrored: boolean): Recordi
   if (!mimeType || !canvas.captureStream) throw new Error('Video recording is not supported');
   const bounds = video.getBoundingClientRect();
   const crop = getCaptureGeometry(video.videoWidth, video.videoHeight, bounds.width, bounds.height);
-  const scale = Math.min(1, 1080 / Math.max(crop.width, crop.height));
+  const scale = Math.min(1, 720 / Math.max(crop.width, crop.height));
   canvas.width = Math.max(2, Math.round(crop.width * scale / 2) * 2);
   canvas.height = Math.max(2, Math.round(crop.height * scale / 2) * 2);
   const context = canvas.getContext('2d', { alpha: false });
@@ -36,7 +36,7 @@ export function recordVideo(video: HTMLVideoElement, mirrored: boolean): Recordi
   const stream = canvas.captureStream(24);
   let recorder: MediaRecorder;
   try {
-    recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 1_400_000 });
+    recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 300_000 });
   } catch (error) {
     stream.getTracks().forEach(track => track.stop());
     canvas.width = canvas.height = 0;
