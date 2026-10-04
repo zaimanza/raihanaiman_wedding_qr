@@ -12,7 +12,7 @@ async (page) => {
   await page.goto('http://localhost:5173/');
   await page.setViewportSize({width:390,height:844});
   const shutter = page.locator('.shutter');
-  await page.waitForFunction(() => !document.querySelector('.shutter').disabled);
+  await page.waitForFunction(() => document.querySelector('.shutter')?.disabled === false);
   assert(await page.evaluate(() => window.__testCameraRequests.every(request => request.audio === false)), 'camera requests no microphone');
   assert(await page.evaluate(() => window.__testCameraRequests.at(-1).video.width.ideal === 3840), 'higher camera resolution requested');
   assert(await shutter.evaluate(el => getComputedStyle(el).touchAction === 'none'), 'long hold prevents touch scrolling');
@@ -26,7 +26,7 @@ async (page) => {
   assert(downloads.length === 1 && downloads[0].endsWith('.jpg'), 'successful photo submission automatically downloads JPEG');
   assert(requests.length === 1 && requests[0].includes('name="photo"'), 'photo submits once as photo');
   await page.waitForURL('http://localhost:5173/');
-  await page.waitForFunction(() => !document.querySelector('.shutter').disabled);
+  await page.waitForFunction(() => document.querySelector('.shutter')?.disabled === false);
   bounds = await shutter.boundingBox();
   await page.mouse.move(bounds.x + bounds.width/2,bounds.y + bounds.height/2);
   await page.mouse.down(); await page.waitForTimeout(1300);
@@ -47,8 +47,8 @@ async (page) => {
       await page.getByRole('button',{name:'Enlarge video',exact:true}).click();
       const video = page.locator('dialog video');
       await video.waitFor();
-      await video.evaluate(video => video.play());
-      assert(await video.evaluate(video => video.controls && !video.paused), `${scheme} ${width}: preview plays with native controls`);
+      await page.waitForFunction(() => { const video = document.querySelector('dialog video'); return video && video.readyState >= 2 && !video.paused; });
+      assert(await video.evaluate(video => video.controls && !video.paused), `${scheme} ${width}: preview autoplays with native controls`);
       await video.evaluate(video => video.pause());
       assert(await video.evaluate(video => video.paused), `${scheme} ${width}: preview pauses`);
       const close = page.getByRole('button',{name:'Close video preview',exact:true});
@@ -69,7 +69,7 @@ async (page) => {
   assert(downloads.length === 2 && /\.(mp4|webm)$/.test(downloads[1]), 'successful video automatically downloads its actual format');
   assert(requests.length === 3 && requests[2].includes('name="video"') && !requests[2].includes('name="photo"'), 'retry uploads video exactly once, not a photo');
   await page.waitForURL('http://localhost:5173/');
-  await page.waitForFunction(() => !document.querySelector('.shutter').disabled);
+  await page.waitForFunction(() => document.querySelector('.shutter')?.disabled === false);
   await page.keyboard.press('Tab');
   await shutter.focus();
   await page.keyboard.down('Space'); await page.waitForTimeout(1300);
@@ -77,14 +77,14 @@ async (page) => {
   await page.keyboard.up('Space'); await page.waitForURL('**/summary');
   await page.getByRole('button',{name:'Retake',exact:true}).click();
   await page.waitForURL('http://localhost:5173/');
-  await page.waitForFunction(() => !document.querySelector('.shutter').disabled);
+  await page.waitForFunction(() => document.querySelector('.shutter')?.disabled === false);
   bounds = await shutter.boundingBox();
   await page.mouse.move(bounds.x + bounds.width/2,bounds.y + bounds.height/2);
   await page.mouse.down(); await page.waitForTimeout(1300);
   await page.dispatchEvent('.shutter','pointercancel'); await page.mouse.up();
   await page.waitForFunction(() => !document.querySelector('.shutter').classList.contains('is-recording'));
   assert(new URL(page.url()).pathname === '/', 'cancelled gesture discards recording safely');
-  await page.waitForFunction(() => !document.querySelector('.shutter').disabled);
+  await page.waitForFunction(() => document.querySelector('.shutter')?.disabled === false);
   bounds = await shutter.boundingBox();
   await page.mouse.move(bounds.x + bounds.width/2,bounds.y + bounds.height/2);
   await page.mouse.down();

@@ -25,7 +25,7 @@ export function MediaPreview({ src, kind, onClose, returnFocusTo }: { src: strin
     }}>
       <button type="button" className="photo-preview-close" aria-label={`Close ${kind} preview`} onClick={onClose} autoFocus><Icon name="close" /></button>
       {kind === 'photo' ? <img className="photo-preview-image" src={src} alt="Your captured wedding memory, enlarged" />
-        : <video className="photo-preview-image" src={src} controls playsInline aria-label="Your recorded wedding memory" />}
+        : <video className="photo-preview-image" src={src} controls autoPlay muted playsInline preload="auto" aria-label="Your recorded wedding memory" />}
     </dialog>
   );
 }
