@@ -1,24 +1,48 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type PointerEvent, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Botanical } from '../components/Botanical';
 import { Icon } from '../components/Icon';
-import { usePhoto } from '../context/PhotoContext';
+import { useMemory } from '../context/MemoryContext';
 import { useCamera } from '../hooks/useCamera';
 import { capturePhoto } from '../utils/image';
+import { HOLD_TO_RECORD_MS, MAX_RECORDING_MS, recordingMimeType, recordVideo, type RecordingSession } from '../utils/recording';
 
 export function CameraPage() {
   const navigate = useNavigate();
-  const { savePhoto, clearDraft } = usePhoto();
+  const { saveMedia, clearDraft } = useMemory();
   const { videoRef, status, error, mirrored, canSwitch, switchCamera, retry, onVideoReady } = useCamera();
   const [capturing, setCapturing] = useState(false);
   const [captureError, setCaptureError] = useState('');
+  const [recording, setRecording] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
   const captureLock = useRef(false);
   const mounted = useRef(true);
+  const held = useRef(false);
+  const holdTimer = useRef<number | undefined>(undefined);
+  const session = useRef<RecordingSession | null>(null);
+  const clock = useRef<number | undefined>(undefined);
+  const canRecord = recordingMimeType() !== null && typeof HTMLCanvasElement.prototype.captureStream === 'function';
+
+  function clearHold() { held.current = false; window.clearTimeout(holdTimer.current); }
+  function cancelRecording() {
+    clearHold();
+    session.current?.cancel();
+    session.current = null;
+    window.clearInterval(clock.current);
+  }
 
   useEffect(() => {
     mounted.current = true;
     clearDraft();
-    return () => { mounted.current = false; };
+    const onHidden = () => { if (document.visibilityState === 'hidden') cancelRecording(); };
+    document.addEventListener('visibilitychange', onHidden);
+    window.addEventListener('pagehide', cancelRecording);
+    return () => {
+      mounted.current = false;
+      cancelRecording();
+      document.removeEventListener('visibilitychange', onHidden);
+      window.removeEventListener('pagehide', cancelRecording);
+    };
   }, [clearDraft]);
 
   async function capture() {
@@ -29,7 +53,7 @@ export function CameraPage() {
     try {
       const blob = await capturePhoto(videoRef.current, mirrored);
       if (!mounted.current) return;
-      savePhoto(blob);
+      saveMedia(blob, 'photo');
       navigate('/summary');
     } catch {
       if (mounted.current) setCaptureError('We missed that little moment. Please try taking it again ♡');
@@ -39,18 +63,67 @@ export function CameraPage() {
     }
   }
 
+  function startRecording() {
+    if (!held.current || captureLock.current || status !== 'ready' || !videoRef.current) return;
+    captureLock.current = true;
+    setCaptureError('');
+    try {
+      const current = recordVideo(videoRef.current, mirrored);
+      session.current = current;
+      setRecording(true);
+      setElapsed(0);
+      const started = performance.now();
+      clock.current = window.setInterval(() => setElapsed(Math.min(MAX_RECORDING_MS / 1000, Math.floor((performance.now() - started) / 1000))), 200);
+      void current.result.then(blob => {
+        if (!mounted.current || session.current !== current) return;
+        saveMedia(blob, 'video');
+        navigate('/summary');
+      }).catch(() => {
+        if (mounted.current && session.current === current) setCaptureError('We couldn’t finish this video. Hold to try again ♡');
+      }).finally(() => {
+        clearHold();
+        window.clearInterval(clock.current);
+        session.current = null;
+        captureLock.current = false;
+        if (mounted.current) { setRecording(false); setCapturing(false); }
+      });
+    } catch {
+      clearHold();
+      captureLock.current = false;
+      setCaptureError('This browser can take photos, but cannot record video. Try Safari or Chrome ♡');
+    }
+  }
+
+  function pressShutter() {
+    if (captureLock.current || status !== 'ready' || held.current) return;
+    held.current = true;
+    if (canRecord) holdTimer.current = window.setTimeout(startRecording, HOLD_TO_RECORD_MS);
+  }
+  function releaseShutter() {
+    const wasHeld = held.current;
+    clearHold();
+    if (session.current) { setCapturing(true); session.current.stop(); }
+    else if (wasHeld && !captureLock.current) void capture();
+  }
+  function pointerDown(event: PointerEvent<HTMLButtonElement>) {
+    if (!event.isPrimary || event.button !== 0) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    pressShutter();
+  }
+  function keyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    if (event.key !== ' ' && event.key !== 'Enter') return;
+    event.preventDefault();
+    if (!event.repeat) pressShutter();
+  }
+
   return (
-    <main className={`camera-page${capturing ? ' is-capturing' : ''}`} aria-label="Wedding camera">
+    <main className={`camera-page${capturing && !recording ? ' is-capturing' : ''}`} aria-label="Wedding camera">
       <video ref={videoRef} className={`camera-preview${mirrored ? ' is-mirrored' : ''}`} autoPlay playsInline muted onLoadedData={onVideoReady} onCanPlay={onVideoReady} aria-label="Live camera preview" />
       <div className="camera-shade" aria-hidden="true" />
       <Botanical className="camera-botanical camera-botanical-top" />
       <Botanical className="camera-botanical camera-botanical-bottom" />
-      <div className="camera-wedding-title" aria-hidden="true">
-        <span>Raihan &amp; Aiman</span>
-        <small>Wedding · 11 Oct 2026</small>
-      </div>
+      <div className="camera-wedding-title" aria-hidden="true"><span>Raihan &amp; Aiman</span><small>Wedding · 11 Oct 2026</small></div>
       <div className="camera-specks" aria-hidden="true"><i /><i /><i /></div>
-
       {status !== 'ready' && (
         <div className="camera-state" role="status" aria-live="polite">
           <div className="camera-state-icon"><Icon name="camera" /></div>
@@ -59,16 +132,18 @@ export function CameraPage() {
               : <><h1>Let’s capture a memory.</h1><p>{error}</p><button type="button" className="camera-retry" onClick={retry}><Icon name="retry" /> Try again</button></>}
         </div>
       )}
-
       {captureError && <div className="camera-notice" role="alert">{captureError}</div>}
-
+      {recording && <div className="recording-status" role="status" aria-live="polite"><span aria-hidden="true" /> Recording · {elapsed}s / 15s</div>}
+      {status === 'ready' && canRecord && !captureError && !recording && <p id="shutter-hint" className="shutter-hint">Tap for photo · Hold for video</p>}
       <div className="camera-controls">
-        <button className="shutter" type="button" aria-label={capturing ? 'Preparing your photo' : 'Take photo'} onClick={() => void capture()} disabled={status !== 'ready' || capturing}>
+        <button className={`shutter${recording ? ' is-recording' : ''}`} type="button" aria-label={recording ? 'Stop recording' : capturing ? 'Preparing your memory' : 'Take photo'} aria-describedby={canRecord && !recording && !captureError ? 'shutter-hint' : undefined}
+          onPointerDown={pointerDown} onPointerUp={releaseShutter} onPointerCancel={cancelRecording}
+          onLostPointerCapture={() => { if (held.current) cancelRecording(); }} onContextMenu={event => event.preventDefault()}
+          onKeyDown={keyDown} onKeyUp={event => { if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); releaseShutter(); } }}
+          onClick={event => { if (event.detail === 0 && !held.current) { if (session.current) session.current.stop(); else void capture(); } }} disabled={status !== 'ready' || capturing}>
           <span className="shutter-core">{capturing && <span className="spinner" />}</span>
         </button>
-        <button className="switch-camera" type="button" aria-label="Switch front and rear cameras" onClick={switchCamera} disabled={status !== 'ready' || capturing || !canSwitch}>
-          <Icon name="switch" />
-        </button>
+        <button className="switch-camera" type="button" aria-label="Switch front and rear cameras" onClick={switchCamera} disabled={status !== 'ready' || capturing || recording || !canSwitch}><Icon name="switch" /></button>
       </div>
       <div className="camera-flash" aria-hidden="true" />
     </main>

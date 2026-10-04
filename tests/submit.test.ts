@@ -1,3 +1,5 @@
+import { execFileSync } from 'node:child_process'
+import ffmpeg from 'ffmpeg-static'
 import { randomUUID } from 'node:crypto'
 import { createServer, type IncomingMessage, type Server } from 'node:http'
 import { PassThrough } from 'node:stream'
@@ -66,6 +68,19 @@ describe('POST /api/submit', () => {
     expect(outbound.has('parse_mode')).toBe(false)
     expect(Buffer.from(await (outbound.get('photo') as Blob).arrayBuffer())).toEqual(photo)
   })
+
+  it('converts a real WebM upload to sendVideo and keeps its wish as the caption', async () => {
+    const bytes = execFileSync(ffmpeg!, ['-hide_banner','-loglevel','error','-f','lavfi','-i','testsrc2=size=160x120:rate=12','-t','0.4','-an','-c:v','libvpx','-f','webm','pipe:1']);
+    const data = form(); data.delete('photo');
+    data.append('video', new Blob([bytes], {type:'video/webm'}), 'video.webm');
+    expect((await post(data)).status).toBe(200);
+    expect(String(telegram.mock.calls[0]![0])).toMatch(/\/sendVideo$/);
+    const sent = telegram.mock.calls[0]![1]?.body as FormData;
+    expect(sent.has('photo')).toBe(false);
+    expect(sent.get('supports_streaming')).toBe('true');
+    expect(sent.get('video')).toMatchObject({type:'video/mp4'});
+    expect(sent.get('caption')).toContain('Selamat pengantin baru');
+  });
 
   it('uploads a photo successfully without a wish', async () => {
     const data = form()
@@ -161,7 +176,7 @@ describe('POST /api/submit', () => {
     consumed.read = () => bytes
     const submission = await parseSubmission(consumed)
     expect(submission.submissionId).toBe(id)
-    expect(submission.photo.data).toEqual(photo)
+    expect(submission.media.data).toEqual(photo)
   })
 
   it('enforces file limits for chunked requests without a Content-Length', async () => {

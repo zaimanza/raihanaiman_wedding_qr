@@ -2,14 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { useBlocker, useNavigate } from 'react-router-dom';
 import { Botanical } from '../components/Botanical';
 import { Icon } from '../components/Icon';
-import { PhotoPreview } from '../components/PhotoPreview';
-import { usePhoto } from '../context/PhotoContext';
+import { MediaPreview } from '../components/MediaPreview';
+import { useMemory } from '../context/MemoryContext';
 import { useOnline } from '../hooks/useOnline';
 import { SubmissionError, submitMemory } from '../services/submit';
+import { downloadMemory } from '../utils/download';
 import { MAX_WISH_LENGTH, normalizeWish } from '../utils/wish';
 
 export function SummaryPage() {
-  const { photo, wish, setWish, clearDraft } = usePhoto();
+  const { media, wish, setWish, clearDraft } = useMemory();
   const navigate = useNavigate();
   const online = useOnline();
   const [phase, setPhase] = useState<'idle' | 'sending' | 'success'>('idle');
@@ -67,7 +68,7 @@ export function SummaryPage() {
 
   async function submit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (lock.current || !photo || !online || Date.now() < retryAt) return;
+    if (lock.current || !media || !online || Date.now() < retryAt) return;
     const normalized = normalizeWish(wish);
     if (normalized.length > MAX_WISH_LENGTH) {
       setError('A slightly shorter wish, please — up to 800 characters ♡');
@@ -77,8 +78,11 @@ export function SummaryPage() {
     setPhase('sending');
     setError('');
     try {
-      await submitMemory(photo, normalized, website.current?.value || '');
-      if (mounted.current) setPhase('success');
+      await submitMemory(media, normalized, website.current?.value || '');
+      if (mounted.current) {
+        setPhase('success');
+        try { downloadMemory(media); } catch { /* The manual Save control remains available. */ }
+      }
     } catch (cause) {
       if (!mounted.current) return;
       const failure = cause instanceof SubmissionError ? cause : new SubmissionError('Please try sending your memory again ♡');
@@ -92,10 +96,10 @@ export function SummaryPage() {
     }
   }
 
-  if (!photo) return null;
+  if (!media) return null;
 
   return (
-    <main className="summary-page" aria-label="Your photo and wedding wish">
+    <main className="summary-page" aria-label={`Your ${media.kind} and wedding wish`}>
       <div className="summary-decoration" aria-hidden="true"><Botanical className="summary-botanical" /></div>
       <form className="summary-form" onSubmit={event => void submit(event)}>
         <div className="summary-content">
@@ -105,8 +109,9 @@ export function SummaryPage() {
           </div>
 
           <figure className="photo-frame">
-            <button ref={photoButton} type="button" className="photo-preview-trigger" aria-label="Enlarge photo" aria-haspopup="dialog" aria-controls="photo-preview" onClick={() => setPreviewOpen(true)} disabled={phase !== 'idle'}>
-              <img className="captured-photo" src={photo.previewUrl} alt="Your captured wedding memory" />
+            <button ref={photoButton} type="button" className="photo-preview-trigger" aria-label={media.kind === 'photo' ? 'Enlarge photo' : 'Enlarge video'} aria-haspopup="dialog" aria-controls="media-preview" onClick={() => setPreviewOpen(true)} disabled={phase !== 'idle'}>
+              {media.kind === 'photo' ? <img className="captured-photo" src={media.previewUrl} alt="Your captured wedding memory" />
+                : <><video className="captured-photo" src={media.previewUrl} playsInline muted preload="metadata" aria-label="Your recorded wedding memory" /><span className="video-play-badge" aria-hidden="true"><Icon name="play" /></span></>}
             </button>
           </figure>
 
@@ -118,7 +123,7 @@ export function SummaryPage() {
 
           <div className="honeypot" aria-hidden="true"><label htmlFor="website">Website</label><input ref={website} type="text" id="website" name="website" tabIndex={-1} autoComplete="off" /></div>
           <div className="submission-notice" aria-live="polite" aria-atomic="true">
-            {!online ? <p className="error-message">You’re offline. Your photo is still here — reconnect to send ♡</p> : error ? <p className="error-message">{error}</p> : null}
+            {!online ? <p className="error-message">You’re offline. Your memory is still here — reconnect to send ♡</p> : error ? <p className="error-message">{error}</p> : null}
             {phase === 'sending' && <p className="sending-message">Sending your little memory…</p>}
           </div>
         </div>
@@ -130,7 +135,7 @@ export function SummaryPage() {
         </div>
       </form>
 
-      {previewOpen && <PhotoPreview src={photo.previewUrl} onClose={() => setPreviewOpen(false)} returnFocusTo={photoButton.current} />}
+      {previewOpen && <MediaPreview kind={media.kind} src={media.previewUrl} onClose={() => setPreviewOpen(false)} returnFocusTo={photoButton.current} />}
 
       {phase === 'success' && (
         <div className="success-overlay" role="status" aria-live="polite">
@@ -138,6 +143,7 @@ export function SummaryPage() {
           <span className="eyebrow">A MEMORY TO TREASURE</span>
           <h2>Sent with love ♡</h2>
           <p>Thank you for being part of our forever.</p>
+          <button type="button" className="save-memory-button" onClick={() => downloadMemory(media)}>Save {media.kind}</button>
         </div>
       )}
     </main>

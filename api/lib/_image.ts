@@ -2,6 +2,7 @@ import { invalidRequest, MAX_PHOTO_BYTES, SubmissionError } from './_validation.
 
 export type PhotoMime = 'image/jpeg' | 'image/png' | 'image/webp'
 export interface Photo {
+  kind: 'photo'
   data: Buffer
   mime: PhotoMime
   extension: 'jpg' | 'png' | 'webp'
@@ -116,5 +117,5 @@ export function validatePhoto(data: Buffer, suppliedMime: string): Photo {
   const [width, height] = dimensions
   // Includes Telegram's size/ratio rules, plus a sensible decoded-pixel ceiling.
   if (width <= 0 || height <= 0 || width + height > 10000 || width * height > 16_000_000 || Math.max(width, height) / Math.min(width, height) > 20) throw invalidRequest()
-  return { data, mime: suppliedMime as PhotoMime, extension, width, height }
+  return { kind: 'photo', data, mime: suppliedMime as PhotoMime, extension, width, height }
 }

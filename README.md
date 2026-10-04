@@ -1,6 +1,6 @@
 # Raihan & Aiman · Wedding memories
 
-A mobile-first wedding camera. Guests scan your QR code, capture a photo, optionally leave a wish, and send it to your private Telegram collection. Guests never need Telegram, an account, or contact details.
+A mobile-first wedding camera. Guests scan your QR code, capture a photo or short video, optionally leave a wish, and send it to your private Telegram collection. Guests never need Telegram, an account, or contact details.
 
 [GitHub repository](https://github.com/zaimanza/raihanaiman_wedding_qr)
 
@@ -16,9 +16,9 @@ A mobile-first wedding camera. Guests scan your QR code, capture a photo, option
                          “Sent with love” → fresh camera
 ```
 
-The rear camera is preferred. A camera switch appears when a second camera is available. Camera permission is the only device permission requested; the app does not record video or audio.
+The rear camera is preferred. Tap the shutter for a photo; hold it for at least one second to start a silent video, then release to finish. Videos stop automatically at 15 seconds or earlier if approaching the upload size limit. A camera switch appears when a second camera is available. Camera permission is the only device permission requested: recordings do not include microphone audio. Browsers without MediaRecorder/canvas recording still support photos.
 
-The Summary route requires a captured photo in React memory. Direct entry, another tab, a bookmark, or refreshing `/summary` returns to `/`. Retake discards the draft. Failed uploads preserve the photo and wish so the guest can retry. Successful delivery briefly shows a success state, clears the draft, and restarts the camera.
+The Summary route requires a captured photo or video in React memory. Direct entry, another tab, a bookmark, or refreshing `/summary` returns to `/`. Retake discards the draft. Failed uploads preserve the photo and wish so the guest can retry. Successful delivery starts a download of the photo/video, shows the success state for two seconds, clears the draft, and restarts the camera. The browser controls its Downloads/Save prompt; this does not automatically write to a phone’s Photos gallery. A manual Save control is also available during the success state. Video previews open a modal with native play/pause controls and a circular close button.
 
 ## Architecture and privacy
 
@@ -26,16 +26,16 @@ React, TypeScript, Vite, React Router, native CSS, `getUserMedia`, and Canvas po
 
 ```text
 Camera frame
-  → resized JPEG Blob in browser memory
+  → resized JPEG or silent MP4/WebM Blob in browser memory
   → POST /api/submit (multipart/form-data)
   → Vercel function memory
-  → Telegram Bot API sendPhoto
+  → Telegram Bot API sendPhoto / sendVideo
   → private Telegram group or channel
 ```
 
 Photos and wishes are never written to localStorage, sessionStorage, IndexedDB, cookies, a database, or server temporary files. The preview uses a temporary object URL, which is released when its draft is discarded. There is no analytics, tracking integration, gallery, guest login, or offline submission queue. Refreshing or closing the page intentionally loses an unsent draft.
 
-Telegram is the final persistent destination. Group/channel members with access can see the photos; manage membership and invitation links accordingly. Vercel may retain normal platform request metadata. Application logs contain safe operational categories rather than photo bytes, wishes, bot tokens, or Telegram request URLs.
+The download is an intentional guest-owned copy; there is no stored gallery in the application. Telegram is the organizers’ persistent destination. Group/channel members with access can see the photos; manage membership and invitation links accordingly. Vercel may retain normal platform request metadata. Application logs contain safe operational categories rather than photo bytes, wishes, bot tokens, or Telegram request URLs.
 
 ## Run locally
 
@@ -85,6 +85,7 @@ npx @playwright/cli -s=wedding run-code --filename=scripts/browser/setup-camera.
 npx @playwright/cli -s=wedding run-code --filename=scripts/browser/check-flow.js
 npx @playwright/cli -s=wedding run-code --filename=scripts/browser/check-frame.js
 npx @playwright/cli -s=wedding run-code --filename=scripts/browser/check-preview.js
+npx @playwright/cli -s=wedding run-code --filename=scripts/browser/check-video.js
 npx @playwright/cli -s=wedding run-code --filename=scripts/browser/check-layout.js
 npx @playwright/cli -s=wedding close
 ```
@@ -104,7 +105,7 @@ Only the wedding organizers perform these steps. Guests interact solely with the
 5. Choose an available username ending in `bot`, such as `RaihanAimanMemoriesBot`.
 6. Copy the token BotFather provides into `TELEGRAM_BOT_TOKEN` in `.env.local`. Do not paste it into source code, screenshots, issues, public chats, or a browser address bar.
 
-Keep this bot dedicated to the wedding app. It only sends photos; it does not need commands, inline mode, a webhook, or an always-running bot service. See [Telegram's bot creation guide](https://core.telegram.org/bots/features#creating-a-new-bot).
+Keep this bot dedicated to the wedding app. It sends photos and videos; it does not need commands, inline mode, a webhook, or an always-running bot service. See [Telegram's bot creation guide](https://core.telegram.org/bots/features#creating-a-new-bot).
 
 ### 2. Create the private destination
 
@@ -112,7 +113,7 @@ Choose one destination:
 
 | Destination | Setup and bot permissions |
 | --- | --- |
-| **Private group** | Create a New Group with the organizers, keep its group type Private, and add the bot by username. Allow the bot to send messages and photos. An ordinary member is sufficient when these permissions are allowed; restricted groups may require an administrator exception. Keep BotFather privacy mode enabled. |
+| **Private group** | Create a New Group with the organizers, keep its group type Private, and add the bot by username. Allow the bot to send messages, photos, and videos. An ordinary member is sufficient when these permissions are allowed; restricted groups may require an administrator exception. Keep BotFather privacy mode enabled. |
 | **Private channel** | Create a New Channel and select Private. Open its Administrators settings, add the bot, and enable **Post Messages**. The bot must be an administrator allowed to post. Other optional administrator powers are unnecessary. |
 
 Telegram labels vary slightly between mobile and desktop apps. For a channel, select the channel itself as your destination, not a linked discussion group. This app posts to the chat's main feed; it does not configure forum topic IDs. Telegram documents [group creation](https://telegram.org/faq#q-how-do-i-create-a-group), [private channels](https://telegram.org/faq_channels#q-how-are-public-and-private-channels-different), and [channel posting permissions](https://core.telegram.org/bots/api#chatadministratorrights).
@@ -171,11 +172,11 @@ See [Vite on Vercel](https://vercel.com/docs/frameworks/frontend/vite), [environ
 
 ## Upload validation and limits
 
-The client saves the centered crop visible in the camera preview, preserves that composition's aspect ratio, and limits the long edge to 1920px without upscaling. The original botanical corners and centered Raihan & Aiman Wedding · 11 Oct 2026 text are preview decorations only. Flowers, wedding text, animated light specks, and camera controls are absent from the saved JPEG shown in Summary and sent to Telegram. Front-camera capture matches the mirrored camera image.
+The client saves the centered crop visible in the camera preview, preserves that composition's aspect ratio, and requests up to 3840×2160 from the camera and limits the saved long edge to 2560px without upscaling. The original botanical corners and centered Raihan & Aiman Wedding · 11 Oct 2026 text are preview decorations only. Flowers, wedding text, animated light specks, and camera controls are absent from the saved JPEG shown in Summary and sent to Telegram. Front-camera capture matches the mirrored camera image. Actual resolution depends on the camera and browser; smaller frames are never enlarged.
 
-It encodes JPEG at 0.86 quality, trying 0.82 and then 0.78 only when necessary to meet the size limit. If even those settings exceed 3 MiB, capture fails gracefully and asks the guest to retry. Canvas captures the displayed camera frame, so uploaded photos do not carry phone-file EXIF orientation metadata.
+It encodes JPEG at 0.92 quality, trying 0.88 and then 0.84 only when necessary to meet the size limit. If even those settings exceed 3 MiB, capture fails gracefully and asks the guest to retry. Canvas captures the displayed camera frame, so uploaded photos do not carry phone-file EXIF orientation metadata.
 
-The API independently validates multipart structure, expected fields, MIME type, image signature/dimensions, photo size, and normalized wish length. It accepts **JPEG, PNG, and WebP** only; the camera produces JPEG. Photos are limited to **3 MiB** and the entire request to **3.25 MiB**, leaving space below Vercel's **4.5 MB** request limit. Wishes are limited to **800 UTF-16 code units**; emoji may count as two. Captions are sent as plain text, so guest content cannot inject Telegram formatting. An empty wish is supported. Telegram allows 1024 caption characters and photos up to 10 MB; the application's stricter limits are intentional. See [Vercel function limits](https://vercel.com/docs/functions/limitations) and [Telegram `sendPhoto`](https://core.telegram.org/bots/api#sendphoto).
+The API independently validates multipart structure, expected fields, MIME type, image signature/dimensions, photo size, and normalized wish length. It accepts **JPEG, PNG, and WebP** photos plus **MP4 and WebM** videos; the camera produces JPEG and prefers MP4 when the browser supports it. Individual media files are limited to **3 MiB** and the entire request to **3.25 MiB**, leaving space below Vercel's **4.5 MB** request limit. Wishes are limited to **800 UTF-16 code units**; emoji may count as two. Captions are sent as plain text, so guest content cannot inject Telegram formatting. An empty wish is supported. Telegram allows 1024 caption characters and photos up to 10 MB; the application's stricter limits are intentional. See [Vercel function limits](https://vercel.com/docs/functions/limitations) and [Telegram `sendPhoto`](https://core.telegram.org/bots/api#sendphoto).
 
 The API accepts same-origin browser submissions and returns generic guest-facing failures. The client locks submission immediately and retains one submission ID through retries. A bounded, short-lived server memory cache coalesces duplicate requests on the **same function instance**. It retains operational IDs, not photo bytes or wishes.
 
@@ -183,10 +184,18 @@ This is **best-effort duplicate prevention**, not durable exactly-once delivery.
 
 Telegram's published guidance advises roughly one message per second to a single chat and limits bots in groups to 20 messages per minute. Busy bursts can receive rate limits; guests keep their drafts and retry after the indicated wait. Internet, Telegram availability, and Vercel Hobby usage limits still apply. The app does not enable paid Telegram broadcasts. See [Telegram's sending limits](https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this) and [Vercel Hobby limits](https://vercel.com/docs/limits).
 
+## Video processing
+
+The browser records the visible crop at up to a 1080px long edge and 24fps, targeting 1.4Mbps and a maximum of 15 seconds. The same memory-only draft and retry/navigation rules apply to photos and videos. The uploaded multipart field is either `photo` or `video`, never both.
+
+A server-only `ffmpeg-static` dependency decodes and normalizes videos into H.264 MP4 for Telegram’s `sendVideo`. This supports browsers that record WebM without sending guests a document attachment. Processing uses bounded stdin/stdout memory pipes, a 20-second deadline, no temporary files, and no external media URLs. The decoder restricts pixel count and the output duration, resolution, bitrate, and file size. Vercel includes the platform binary via `functions.includeFiles`; it is excluded from the frontend bundle. See [Telegram sendVideo](https://core.telegram.org/bots/api#sendvideo) and [ffmpeg-static](https://github.com/eugeneware/ffmpeg-static) for its binary and license details.
+
+The automatic download runs only after a successful Telegram acknowledgement. On iPhone and other mobile browsers, the operating system may require a Save/Download confirmation. Test the venue’s target phones; browser behavior cannot guarantee silent saving into Photos.
+
 ## Before the wedding
 
 - Test iPhone Safari, Android Chrome, and Samsung Internet on the production HTTPS URL with real cameras.
-- Test front/rear switching, portrait/landscape rotation, short screens, keyboard visibility, safe-area padding, and widths near 375, 390, 412, and 430px.
+- Test tap versus hold (including cancellation and the 15-second limit), video play/pause, Telegram video delivery, automatic downloads, and front/rear switching, portrait/landscape rotation, short screens, keyboard visibility, safe-area padding, and widths near 375, 390, 412, and 430px.
 - Deny camera permission once, then verify the permission guidance and retry behavior. Check a device with no camera.
 - Retake a photo and confirm the old image/wish disappear. Refresh Summary and confirm it returns to the camera. Check browser Back/Forward.
 - Temporarily disconnect the network on Summary, submit, and verify the photo/wish survive the error. Reconnect and retry.

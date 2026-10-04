@@ -1,5 +1,6 @@
 import type { Submission } from './_multipart.ts'
 import { buildCaption, SubmissionError } from './_validation.ts'
+import { prepareVideo } from './_video.ts'
 
 export interface TelegramConfiguration {
   botToken: string
@@ -43,12 +44,19 @@ export async function sendToTelegram(
   form.append('chat_id', configuration.chatId)
   form.append('caption', buildCaption(submission.wish))
   // A plain caption deliberately omits parse_mode: guests' punctuation cannot become markup.
-  form.append('photo', new Blob([new Uint8Array(submission.photo.data)], { type: submission.photo.mime }), `wedding-memory.${submission.photo.extension}`)
+  const media = submission.media
+  if (media.kind === 'video') {
+    const mp4 = await prepareVideo(media)
+    form.append('video', new Blob([new Uint8Array(mp4)], { type: 'video/mp4' }), 'wedding-memory.mp4')
+    form.append('supports_streaming', 'true')
+  } else {
+    form.append('photo', new Blob([new Uint8Array(media.data)], { type: media.mime }), `wedding-memory.${media.extension}`)
+  }
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
   timeout.unref()
   try {
-    const response = await fetchImplementation(`https://api.telegram.org/bot${configuration.botToken}/sendPhoto`, {
+    const response = await fetchImplementation(`https://api.telegram.org/bot${configuration.botToken}/${media.kind === 'video' ? 'sendVideo' : 'sendPhoto'}`, {
       method: 'POST', body: form, signal: controller.signal, redirect: 'error',
     })
     let payload: unknown

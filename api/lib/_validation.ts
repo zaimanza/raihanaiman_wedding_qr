@@ -1,4 +1,5 @@
-export const MAX_PHOTO_BYTES = 3 * 1024 * 1024
+export const MAX_MEDIA_BYTES = 3 * 1024 * 1024
+export const MAX_PHOTO_BYTES = MAX_MEDIA_BYTES
 export const MAX_REQUEST_BYTES = Math.floor(3.25 * 1024 * 1024)
 export const MAX_WISH_LENGTH = 800
 

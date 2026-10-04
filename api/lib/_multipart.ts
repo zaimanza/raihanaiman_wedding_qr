@@ -1,15 +1,16 @@
 import busboy from 'busboy'
 import type { IncomingMessage } from 'node:http'
 import { validatePhoto, type Photo } from './_image.ts'
-import { invalidRequest, MAX_PHOTO_BYTES, MAX_REQUEST_BYTES, normalizeWish, SubmissionError, validateSubmissionId } from './_validation.ts'
+import { validateVideo, type Video } from './_video.ts'
+import { invalidRequest, MAX_MEDIA_BYTES, MAX_REQUEST_BYTES, normalizeWish, SubmissionError, validateSubmissionId } from './_validation.ts'
 
 export interface Submission {
-  photo: Photo
+  media: Photo | Video
   wish: string
   submissionId: string
 }
 
-const oversized = () => new SubmissionError(413, 'PHOTO_TOO_LARGE', 'This photo is a little too large. Please retake it ♡')
+const oversized = () => new SubmissionError(413, 'MEDIA_TOO_LARGE', 'This memory is a little too large. Please retake it ♡')
 
 export function parseSubmission(request: IncomingMessage): Promise<Submission> {
   const contentType = request.headers['content-type']
@@ -27,7 +28,7 @@ export function parseSubmission(request: IncomingMessage): Promise<Submission> {
         headers: request.headers,
         // Busboy emits "limit" when the size equals fileSize, so allow one sentinel byte;
         // validatePhoto independently enforces the inclusive maximum after parsing.
-        limits: { fileSize: MAX_PHOTO_BYTES + 1, files: 1, fields: 4, parts: 5, fieldSize: 4000, fieldNameSize: 40, headerPairs: 32 },
+        limits: { fileSize: MAX_MEDIA_BYTES + 1, files: 1, fields: 4, parts: 5, fieldSize: 4000, fieldNameSize: 40, headerPairs: 32 },
       })
     } catch {
       reject(invalidRequest())
@@ -37,6 +38,7 @@ export function parseSubmission(request: IncomingMessage): Promise<Submission> {
     let requestBytes = 0
     let photoBuffer: Buffer | undefined
     let photoMime = ''
+    let fileKind: 'photo' | 'video' = 'photo'
     let fileSeen = false
     const fields = new Map<string, string>()
     let chunks: Buffer[] = []
@@ -87,14 +89,15 @@ export function parseSubmission(request: IncomingMessage): Promise<Submission> {
     })
     parser.on('file', (name, stream, info) => {
       stream.on('error', () => fail(invalidRequest()))
-      if (finished || fileSeen || name !== 'photo') {
+      if (finished || fileSeen || !['photo', 'video'].includes(name)) {
         stream.resume()
         fail(invalidRequest())
         return
       }
       fileSeen = true
+      fileKind = name as 'photo' | 'video'
       photoMime = info.mimeType
-      if (!['image/jpeg', 'image/png', 'image/webp'].includes(photoMime)) {
+      if (!(fileKind === 'photo' ? ['image/jpeg', 'image/png', 'image/webp'] : ['video/mp4', 'video/webm']).includes(photoMime)) {
         stream.resume()
         fail(new SubmissionError(415, 'UNSUPPORTED_PHOTO', 'Please take a new photo using this camera ♡'))
         return
@@ -113,7 +116,7 @@ export function parseSubmission(request: IncomingMessage): Promise<Submission> {
       try {
         if (!photoBuffer || (fields.get('website') ?? '').trim()) throw invalidRequest()
         const submission: Submission = {
-          photo: validatePhoto(photoBuffer, photoMime),
+          media: fileKind === 'photo' ? validatePhoto(photoBuffer, photoMime) : validateVideo(photoBuffer, photoMime),
           wish: normalizeWish(fields.get('wish') ?? ''),
           submissionId: validateSubmissionId(fields.get('submissionId')),
         }

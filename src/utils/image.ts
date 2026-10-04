@@ -1,5 +1,5 @@
 export const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
-export const MAX_IMAGE_EDGE = 1920;
+export const MAX_IMAGE_EDGE = 2560;
 
 export function getCaptureGeometry(videoWidth: number, videoHeight: number, previewWidth: number, previewHeight: number) {
   if ([videoWidth, videoHeight, previewWidth, previewHeight].some(value => !Number.isFinite(value) || value <= 0)) {
@@ -43,7 +43,7 @@ export async function capturePhoto(video: HTMLVideoElement, mirrored: boolean): 
     context.drawImage(video, geometry.sx, geometry.sy, geometry.sw, geometry.sh, 0, 0, canvas.width, canvas.height);
     context.restore();
     // Preview flowers, wedding text, and controls are intentionally absent from the JPEG.
-    for (const quality of [0.86, 0.82, 0.78]) {
+    for (const quality of [0.92, 0.88, 0.84]) {
       const blob = await encodeJpeg(canvas, quality);
       if (blob.size > 0 && blob.size <= MAX_IMAGE_BYTES) return blob;
     }

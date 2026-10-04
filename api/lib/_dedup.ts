@@ -19,8 +19,8 @@ export class SubmissionDeduplicator {
       if (!entry.pending && entry.expiresAt <= now) this.entries.delete(id)
     }
     const hash = createHash('sha256')
-      .update(submission.photo.mime).update('\0')
-      .update(submission.photo.data).update('\0')
+      .update(submission.media.kind).update('\0').update(submission.media.mime).update('\0')
+      .update(submission.media.data).update('\0')
       .update(submission.wish).digest('hex')
     const existing = this.entries.get(submission.submissionId)
     if (existing) {

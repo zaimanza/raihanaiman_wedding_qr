@@ -1,4 +1,5 @@
-import type { CapturedPhoto } from '../types/photo';
+import type { CapturedMedia } from '../types/media';
+import { mediaFilename } from '../utils/download';
 
 export class SubmissionError extends Error {
   retryAfterSeconds: number;
@@ -8,11 +9,11 @@ export class SubmissionError extends Error {
   }
 }
 
-export async function submitMemory(photo: CapturedPhoto, wish: string, website: string) {
+export async function submitMemory(media: CapturedMedia, wish: string, website: string) {
   const data = new FormData();
-  data.append('photo', photo.blob, 'wedding-memory.jpg');
+  data.append(media.kind, media.blob, mediaFilename(media));
   data.append('wish', wish);
-  data.append('submissionId', photo.submissionId);
+  data.append('submissionId', media.submissionId);
   data.append('website', website);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 55_000);
@@ -28,11 +29,11 @@ export async function submitMemory(photo: CapturedPhoto, wish: string, website: 
     if (response.status === 429) {
       throw new SubmissionError("So many lovely memories arriving at once. Please give us a little moment ♡", retryAfter || 10);
     }
-    if (response.status === 413) throw new SubmissionError('This photo is a little too large. Please retake it ♡');
-    throw new SubmissionError("That didn’t quite make it through. Your photo is still here — please try again ♡", retryAfter);
+    if (response.status === 413) throw new SubmissionError(`This ${media.kind} is a little too large. Please retake it ♡`);
+    throw new SubmissionError(`That didn’t quite make it through. Your ${media.kind} is still here — please try again ♡`, retryAfter);
   } catch (cause) {
     if (cause instanceof SubmissionError) throw cause;
-    throw new SubmissionError("The connection slipped away. Your photo is still here — please try again ♡");
+    throw new SubmissionError(`The connection slipped away. Your ${media.kind} is still here — please try again ♡`);
   } finally {
     clearTimeout(timeout);
   }

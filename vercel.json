@@ -4,7 +4,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/submit.ts": { "maxDuration": 60 }
+    "api/submit.ts": { "maxDuration": 60, "includeFiles": "node_modules/ffmpeg-static/ffmpeg" }
   },
   "rewrites": [
     { "source": "/summary", "destination": "/index.html" }

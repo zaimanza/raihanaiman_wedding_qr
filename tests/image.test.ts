@@ -11,10 +11,10 @@ describe('camera composition and resizing', () => {
     expect(crop.sx).toBeGreaterThan(0);
     expect(crop.sy).toBe(0);
   });
-  it('caps large frames at 1920px and preserves the composition ratio', () => {
+  it('caps large frames at 2560px and preserves the composition ratio', () => {
     const crop = getCaptureGeometry(4032, 3024, 1200, 800);
-    expect(crop.width).toBe(1920);
-    expect(crop.height).toBe(1280);
+    expect(crop.width).toBe(2560);
+    expect(crop.height).toBe(1707);
     expect(crop.sy).toBeGreaterThan(0);
   });
   it('rejects unavailable or non-finite frames', () => {

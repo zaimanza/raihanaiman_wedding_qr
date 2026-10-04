@@ -26,7 +26,12 @@ button svg { width: 22px; height: 22px; flex-shrink: 0; }
 .camera-specks i:nth-child(2) { right: 5%; top: 51%; animation-delay: -3s; }
 .camera-specks i:nth-child(3) { left: 6%; bottom: 24%; animation-delay: -6s; }
 .camera-controls { position: absolute; z-index: 4; left: 50%; transform: translateX(-50%); bottom: 0; display: grid; grid-template-columns: 60px 92px 60px; align-items: center; justify-content: center; gap: clamp(22px, 8vw, 46px); padding: 25px 18px calc(28px + env(safe-area-inset-bottom)); }
-.shutter { grid-column: 2; }
+.shutter { grid-column: 2; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.shutter.is-recording { border-color: var(--recording-red); }
+.shutter.is-recording .shutter-core { width: 34px; height: 34px; border-radius: 8px; background: var(--recording-red); }
+.shutter-hint, .recording-status { position: absolute; z-index: 4; bottom: calc(142px + env(safe-area-inset-bottom)); left: 20px; right: 20px; margin: 0; text-align: center; color: var(--camera-ink); font-size: 11px; text-shadow: 0 1px 4px var(--camera-bg); }
+.recording-status { display: flex; align-items: center; justify-content: center; gap: 8px; font-variant-numeric: tabular-nums; }
+.recording-status > span { width: 8px; height: 8px; border-radius: 50%; background: var(--recording-red); }
 .shutter { width: 88px; height: 88px; padding: 6px; border-radius: 50%; border: 1.5px solid var(--shutter-line); background: transparent; display: grid; place-items: center; box-shadow: 0 2px 20px var(--shutter-shadow); transition: transform .2s ease, opacity .2s ease; }
 .shutter-core { width: 100%; height: 100%; display: grid; place-items: center; border-radius: 50%; background: var(--shutter-white); color: var(--camera-bg); transition: transform .18s ease; }
 .shutter:active:not(:disabled) .shutter-core { transform: scale(.91); }
@@ -57,7 +62,9 @@ button svg { width: 22px; height: 22px; flex-shrink: 0; }
 .couple-name span { color: var(--gold); padding: 0 3px; }
 .photo-frame { width: fit-content; max-width: 100%; margin: 0 auto 22px; padding: 6px; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); box-shadow: 0 8px 24px var(--shadow); }
 .captured-photo { display: block; width: auto; height: auto; max-width: 100%; max-height: min(36vh, 320px); max-height: min(36dvh, 320px); object-fit: contain; border-radius: 9px; background: var(--paper-soft); }
-.photo-preview-trigger { display: block; max-width: 100%; padding: 0; border: 0; border-radius: 9px; background: transparent; cursor: zoom-in; }
+.photo-preview-trigger { position: relative; display: block; max-width: 100%; padding: 0; border: 0; border-radius: 9px; background: transparent; cursor: zoom-in; }
+.video-play-badge { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: var(--camera-notice-bg); color: var(--camera-ink); }
+.save-memory-button { margin-top: 18px; min-height: 44px; padding: 8px 18px; border: 1px solid var(--line); border-radius: 24px; background: var(--surface); color: var(--ink); font-size: 13px; }
 .photo-preview-dialog { position: fixed; inset: 0; width: 100%; max-width: none; height: 100vh; height: 100dvh; max-height: none; margin: 0; padding: calc(76px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left)); border: 0; background: var(--preview-backdrop); color: var(--camera-ink); }
 .photo-preview-dialog[open] { display: grid; grid-template-rows: minmax(0, 1fr); place-items: center; }
 .photo-preview-dialog::backdrop { background: var(--preview-backdrop); }
@@ -102,6 +109,7 @@ button svg { width: 22px; height: 22px; flex-shrink: 0; }
   .camera-state { padding: 30px 135px 30px 30px; }
   .camera-botanical-bottom { bottom: 12px; right: calc(120px + env(safe-area-inset-right)); }
   .camera-notice { bottom: 20px; right: 135px; }
+  .shutter-hint, .recording-status { bottom: calc(18px + env(safe-area-inset-bottom)); right: 120px; }
   .camera-shade { background: linear-gradient(to right, var(--camera-shade-clear) 55%, var(--camera-shade-deep)); }
 }
 @keyframes spin { to { transform: rotate(360deg); } }

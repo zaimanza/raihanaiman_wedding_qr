@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { submitMemory } from '../src/services/submit';
-import type { CapturedPhoto } from '../src/types/photo';
+import type { CapturedMedia } from '../src/types/media';
 
-const photo: CapturedPhoto = { blob: new Blob(['test'], { type: 'image/jpeg' }), previewUrl: 'blob:memory', submissionId: 'db8dfc65-cb28-463f-99b9-ed02fa48a91d' };
+const photo: CapturedMedia = { kind: 'photo', blob: new Blob(['test'], { type: 'image/jpeg' }), previewUrl: 'blob:memory', submissionId: 'db8dfc65-cb28-463f-99b9-ed02fa48a91d' };
 afterEach(() => vi.unstubAllGlobals());
 
 describe('submission client', () => {
@@ -16,6 +16,14 @@ describe('submission client', () => {
     expect(request.body.get('submissionId')).toBe(photo.submissionId);
     expect(request.signal).toBeInstanceOf(AbortSignal);
     expect(request.headers).toBeUndefined(); // Browser provides the multipart boundary.
+  });
+  it('sends recordings as video multipart fields with the actual format', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ok:true}));
+    vi.stubGlobal('fetch', fetchMock);
+    await submitMemory({...photo,kind:'video',blob:new Blob(['clip'],{type:'video/webm'})}, '', '');
+    const body = fetchMock.mock.calls[0]![1].body as FormData;
+    expect(body.has('photo')).toBe(false);
+    expect(body.get('video')).toMatchObject({type:'video/webm'});
   });
   it('does not expose upstream error messages', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ ok: false, message: 'token=SECRET upstream stacktrace' }, { status: 502 })));

@@ -40,7 +40,7 @@ async (page) => {
     });
     assert(pixels.topMarks === 0, `${facing}: saved JPEG has no wedding title, date, or top-left flowers`);
     assert(pixels.cornerMarks === 0, `${facing}: saved JPEG has no lower-right floral artwork`);
-    assert(pixels.type === 'image/jpeg' && pixels.bytes <= 3 * 1024 * 1024 && Math.max(pixels.width, pixels.height) <= 1920, `${facing}: clean photo respects JPEG and upload limits`);
+    assert(pixels.type === 'image/jpeg' && pixels.bytes <= 3 * 1024 * 1024 && Math.max(pixels.width, pixels.height) <= 2560, `${facing}: clean photo respects JPEG and upload limits`);
     await page.screenshot({ path: `output/playwright/preview-only-summary-${facing}.png` });
     await page.getByRole('button', { name: 'Retake' }).click();
     await ready();
