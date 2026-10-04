@@ -83,6 +83,7 @@ The GitHub workflow runs `npm run check` on pushes and pull requests. The browse
 npx @playwright/cli -s=wedding open about:blank
 npx @playwright/cli -s=wedding run-code --filename=scripts/browser/setup-camera.js
 npx @playwright/cli -s=wedding run-code --filename=scripts/browser/check-flow.js
+npx @playwright/cli -s=wedding run-code --filename=scripts/browser/check-frame.js
 npx @playwright/cli -s=wedding run-code --filename=scripts/browser/check-layout.js
 npx @playwright/cli -s=wedding close
 ```
@@ -169,7 +170,9 @@ See [Vite on Vercel](https://vercel.com/docs/frameworks/frontend/vite), [environ
 
 ## Upload validation and limits
 
-The client saves the centered crop visible in the camera preview, preserves that composition's aspect ratio, and limits the long edge to 1920px without upscaling. It encodes JPEG at 0.86 quality, trying 0.82 and then 0.78 only when necessary to meet the size limit. If even those settings exceed 3 MiB, capture fails gracefully and asks the guest to retry. Canvas captures the displayed camera frame, so uploaded photos do not carry phone-file EXIF orientation metadata. Front-camera capture matches the mirrored preview.
+The client saves the centered crop visible in the camera preview, preserves that composition's aspect ratio, and limits the long edge to 1920px without upscaling. It composites the same lightweight SVG wedding frame shown over the preview into the photo: Raihan & Aiman Wedding lettering, botanical flowers, and a cat in the lower-right corner. These decorations are part of the JPEG visible in Summary and sent to Telegram; camera controls and animated light specks are not included. Front-camera capture matches the mirrored preview while the lettering and artwork remain upright and readable.
+
+It encodes JPEG at 0.86 quality, trying 0.82 and then 0.78 only when necessary to meet the size limit. If even those settings exceed 3 MiB, capture fails gracefully and asks the guest to retry. Canvas captures the displayed camera frame, so uploaded photos do not carry phone-file EXIF orientation metadata.
 
 The API independently validates multipart structure, expected fields, MIME type, image signature/dimensions, photo size, and normalized wish length. It accepts **JPEG, PNG, and WebP** only; the camera produces JPEG. Photos are limited to **3 MiB** and the entire request to **3.25 MiB**, leaving space below Vercel's **4.5 MB** request limit. Wishes are limited to **800 UTF-16 code units**; emoji may count as two. Captions are sent as plain text, so guest content cannot inject Telegram formatting. An empty wish is supported. Telegram allows 1024 caption characters and photos up to 10 MB; the application's stricter limits are intentional. See [Vercel function limits](https://vercel.com/docs/functions/limitations) and [Telegram `sendPhoto`](https://core.telegram.org/bots/api#sendphoto).
 

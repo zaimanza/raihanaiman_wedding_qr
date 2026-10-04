@@ -14,16 +14,15 @@ button svg { width: 22px; height: 22px; flex-shrink: 0; }
 .camera-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .camera-preview.is-mirrored { transform: scaleX(-1); }
 .camera-shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to bottom, var(--camera-shade-light), var(--camera-shade-clear) 20%, var(--camera-shade-clear) 60%, var(--camera-shade-deep)); }
-.camera-botanical { z-index: 2; color: var(--camera-botanical); width: clamp(62px, 16vw, 92px); opacity: .44; }
-.camera-botanical-top { top: calc(14px + env(safe-area-inset-top)); left: 13px; transform: rotate(175deg); }
-.camera-botanical-bottom { right: 9px; bottom: calc(136px + env(safe-area-inset-bottom)); transform: rotate(-15deg); opacity: .32; }
+.wedding-frame { position: absolute; inset: 0; z-index: 2; pointer-events: none; --frame-safe-top: env(safe-area-inset-top, 0px); --frame-safe-bottom: env(safe-area-inset-bottom, 0px); --frame-safe-left: env(safe-area-inset-left, 0px); --frame-safe-right: env(safe-area-inset-right, 0px); }
+.wedding-frame-art { display: block; width: 100%; height: 100%; user-select: none; }
 .camera-specks { position: absolute; inset: 0; pointer-events: none; }
 .camera-specks i { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: var(--camera-ink); box-shadow: 0 0 8px 2px var(--camera-glow); opacity: .35; animation: drift 9s ease-in-out infinite alternate; }
 .camera-specks i:nth-child(1) { left: 9%; top: 28%; }
 .camera-specks i:nth-child(2) { right: 5%; top: 51%; animation-delay: -3s; }
 .camera-specks i:nth-child(3) { left: 6%; bottom: 24%; animation-delay: -6s; }
 .camera-controls { position: absolute; z-index: 4; left: 50%; transform: translateX(-50%); bottom: 0; display: grid; grid-template-columns: 60px 92px 60px; align-items: center; justify-content: center; gap: clamp(22px, 8vw, 46px); padding: 25px 18px calc(28px + env(safe-area-inset-bottom)); }
-.camera-control-flower { justify-self: center; font-family: var(--font-display); font-size: 25px; opacity: .55; }
+.shutter { grid-column: 2; }
 .shutter { width: 88px; height: 88px; padding: 6px; border-radius: 50%; border: 1.5px solid var(--shutter-line); background: transparent; display: grid; place-items: center; box-shadow: 0 2px 20px var(--shutter-shadow); transition: transform .2s ease, opacity .2s ease; }
 .shutter-core { width: 100%; height: 100%; display: grid; place-items: center; border-radius: 50%; background: var(--shutter-white); color: var(--camera-bg); transition: transform .18s ease; }
 .shutter:active:not(:disabled) .shutter-core { transform: scale(.91); }
@@ -97,9 +96,7 @@ button svg { width: 22px; height: 22px; flex-shrink: 0; }
 }
 @media (max-height: 600px) and (orientation: landscape) {
   .camera-controls { left: auto; right: env(safe-area-inset-right); top: 50%; bottom: auto; transform: translateY(-50%); display: flex; flex-direction: column; gap: 18px; padding: 18px; }
-  .camera-control-flower { display: none; }
   .camera-state { padding: 30px 135px 30px 30px; }
-  .camera-botanical-bottom { bottom: 12px; right: 120px; }
   .camera-notice { bottom: 20px; right: 135px; }
   .camera-shade { background: linear-gradient(to right, var(--camera-shade-clear) 55%, var(--camera-shade-deep)); }
 }

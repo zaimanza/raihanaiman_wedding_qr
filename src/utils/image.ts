@@ -27,7 +27,7 @@ function encodeJpeg(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
   }, 'image/jpeg', quality));
 }
 
-export async function capturePhoto(video: HTMLVideoElement, mirrored: boolean): Promise<Blob> {
+export async function capturePhoto(video: HTMLVideoElement, mirrored: boolean, frame: HTMLImageElement): Promise<Blob> {
   if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) throw new Error('Camera frame is not ready');
   const bounds = video.getBoundingClientRect();
   const geometry = getCaptureGeometry(video.videoWidth, video.videoHeight, bounds.width, bounds.height);
@@ -37,9 +37,16 @@ export async function capturePhoto(video: HTMLVideoElement, mirrored: boolean): 
   const context = canvas.getContext('2d', { alpha: false });
   if (!context) throw new Error('Could not prepare the photo');
   // Video frames are already oriented by the browser; no EXIF data is copied.
-  if (mirrored) { context.translate(canvas.width, 0); context.scale(-1, 1); }
-  context.drawImage(video, geometry.sx, geometry.sy, geometry.sw, geometry.sh, 0, 0, canvas.width, canvas.height);
   try {
+    context.save();
+    if (mirrored) { context.translate(canvas.width, 0); context.scale(-1, 1); }
+    context.drawImage(video, geometry.sx, geometry.sy, geometry.sw, geometry.sh, 0, 0, canvas.width, canvas.height);
+    context.restore();
+    // Decode a snapshot of the visible artwork, so viewport changes cannot replace it mid-capture.
+    const artwork = new Image();
+    artwork.src = frame.currentSrc || frame.src;
+    await artwork.decode();
+    context.drawImage(artwork, 0, 0, canvas.width, canvas.height);
     for (const quality of [0.86, 0.82, 0.78]) {
       const blob = await encodeJpeg(canvas, quality);
       if (blob.size > 0 && blob.size <= MAX_IMAGE_BYTES) return blob;

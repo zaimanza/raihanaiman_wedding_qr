@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Botanical } from '../components/Botanical';
+import { WeddingFrame } from '../components/WeddingFrame';
 import { Icon } from '../components/Icon';
 import { usePhoto } from '../context/PhotoContext';
 import { useCamera } from '../hooks/useCamera';
@@ -13,6 +13,7 @@ export function CameraPage() {
   const [capturing, setCapturing] = useState(false);
   const [captureError, setCaptureError] = useState('');
   const captureLock = useRef(false);
+  const frameRef = useRef<HTMLImageElement>(null);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -27,7 +28,8 @@ export function CameraPage() {
     setCapturing(true);
     setCaptureError('');
     try {
-      const blob = await capturePhoto(videoRef.current, mirrored);
+      if (!frameRef.current) throw new Error('Wedding frame is not ready');
+      const blob = await capturePhoto(videoRef.current, mirrored, frameRef.current);
       if (!mounted.current) return;
       savePhoto(blob);
       navigate('/summary');
@@ -43,8 +45,7 @@ export function CameraPage() {
     <main className={`camera-page${capturing ? ' is-capturing' : ''}`} aria-label="Wedding camera">
       <video ref={videoRef} className={`camera-preview${mirrored ? ' is-mirrored' : ''}`} autoPlay playsInline muted onLoadedData={onVideoReady} onCanPlay={onVideoReady} aria-label="Live camera preview" />
       <div className="camera-shade" aria-hidden="true" />
-      <Botanical className="camera-botanical camera-botanical-top" />
-      <Botanical className="camera-botanical camera-botanical-bottom" />
+      <WeddingFrame imageRef={frameRef} />
       <div className="camera-specks" aria-hidden="true"><i /><i /><i /></div>
 
       {status !== 'ready' && (
@@ -59,7 +60,6 @@ export function CameraPage() {
       {captureError && <div className="camera-notice" role="alert">{captureError}</div>}
 
       <div className="camera-controls">
-        <span className="camera-control-flower" aria-hidden="true">✧</span>
         <button className="shutter" type="button" aria-label={capturing ? 'Preparing your photo' : 'Take photo'} onClick={() => void capture()} disabled={status !== 'ready' || capturing}>
           <span className="shutter-core">{capturing && <span className="spinner" />}</span>
         </button>
