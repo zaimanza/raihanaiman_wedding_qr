@@ -29,7 +29,7 @@ Camera frame
   → resized JPEG or silent MP4/WebM Blob in browser memory
   → POST /api/submit (multipart/form-data)
   → Vercel function memory
-  → Telegram Bot API sendPhoto / sendVideo
+  → Telegram Bot API sendDocument / sendVideo
   → private Telegram group or channel
 ```
 
@@ -172,11 +172,11 @@ See [Vite on Vercel](https://vercel.com/docs/frameworks/frontend/vite), [environ
 
 ## Upload validation and limits
 
-The client saves the centered crop visible in the camera preview, preserves that composition's aspect ratio, and requests up to 3840×2160 from the camera and limits the saved long edge to 2560px without upscaling. The original botanical corners and centered Raihan & Aiman Wedding · 11 Oct 2026 text are preview decorations only. Flowers, wedding text, animated light specks, and camera controls are absent from the saved JPEG shown in Summary and sent to Telegram. Front-camera capture matches the mirrored camera image. Actual resolution depends on the camera and browser; smaller frames are never enlarged.
+The app requests a 4K video stream where the camera/browser supports it. Photos first attempt the browser's native ImageCapture still-photo API (up to a 4096px long edge), then fall back to the live video frame on unsupported browsers such as iPhone Safari. No smaller frame is enlarged. The visible centered crop and front-camera mirror direction are preserved.
 
-It encodes JPEG at 0.92 quality, trying 0.88 and then 0.84 only when necessary to meet the size limit. If even those settings exceed 3 MiB, capture fails gracefully and asks the guest to retry. Canvas captures the displayed camera frame, so uploaded photos do not carry phone-file EXIF orientation metadata.
+Preview/download photos use JPEG quality 0.98, with artwork. The clean upload keeps those capture bytes when it fits the 4 MiB limit. Only oversized uploads are re-encoded at 0.96/0.94/0.92 and, if necessary, resized; the local decorated copy retains its original quality and resolution. Telegram receives the clean JPEG through sendDocument so it remains a downloadable image file rather than a compressed Telegram photo. This does not mean raw sensor data or unlimited file size: camera/browser capabilities and the upload budget still apply.
 
-The API independently validates multipart structure, expected fields, MIME type, image signature/dimensions, photo size, and normalized wish length. It accepts **JPEG, PNG, and WebP** photos plus **MP4 and WebM** videos; the camera produces JPEG and prefers MP4 when the browser supports it. Individual media files are limited to **3 MiB** and the entire request to **3.25 MiB**, leaving space below Vercel's **4.5 MB** request limit. Wishes are limited to **800 UTF-16 code units**; emoji may count as two. Captions are sent as plain text, so guest content cannot inject Telegram formatting. An empty wish is supported. Telegram allows 1024 caption characters and photos up to 10 MB; the application's stricter limits are intentional. See [Vercel function limits](https://vercel.com/docs/functions/limitations) and [Telegram `sendPhoto`](https://core.telegram.org/bots/api#sendphoto).
+The API independently validates multipart structure, expected fields, MIME type, image signature/dimensions, photo size, and normalized wish length. It accepts **JPEG, PNG, and WebP** photos plus **MP4 and WebM** videos; the camera produces JPEG and prefers MP4 when the browser supports it. Individual media files are limited to **4 MiB** and the entire request to **4.125 MiB**, leaving space below Vercel's **4.5 MB** request limit. Wishes are limited to **800 UTF-16 code units**; emoji may count as two. Captions are sent as plain text, so guest content cannot inject Telegram formatting. An empty wish is supported. Telegram allows 1024 caption characters and files up to 50 MB through sendDocument; Vercel's stricter request limit applies first. See [Vercel function limits](https://vercel.com/docs/functions/limitations) and [Telegram `sendDocument`](https://core.telegram.org/bots/api#senddocument).
 
 The API accepts same-origin browser submissions and returns generic guest-facing failures. The client locks submission immediately and retains one submission ID through retries. A bounded, short-lived server memory cache coalesces duplicate requests on the **same function instance**. It retains operational IDs, not photo bytes or wishes.
 
@@ -186,9 +186,11 @@ Telegram's published guidance advises roughly one message per second to a single
 
 ## Video processing
 
-The browser records the visible crop at up to a 720px long edge and 24fps, targeting 0.3Mbps and a maximum of 60 seconds. A second canvas encoder creates the decorated keepsake at the same time (up to 0.7Mbps); no full-length replay is needed after submission. Only the clean 0.3Mbps copy is uploaded to Telegram. The same memory-only draft and retry/navigation rules apply to photos and videos. The uploaded multipart field is either `photo` or `video`, never both.
+Video previews/downloads retain up to a 1920px long edge at 24fps and target 8Mbps. A separate clean upload encoder uses up to 1080px and 0.5Mbps, allowing a full 60 seconds to fit below 4 MiB. Both encoders preserve the same crop and mirror direction; no second playback/export wait is needed after submission. Decorated recordings are memory-only and bounded to 80 MiB. Slow devices may deliver fewer frames or honor bitrate hints differently, so recordings still stop early if approaching their size cap.
 
-A server-only `ffmpeg-static` dependency decodes and normalizes videos into H.264 MP4 for Telegram’s `sendVideo`. This supports browsers that record WebM without sending guests a document attachment. Processing uses bounded stdin/stdout memory pipes, a 30-second deadline, no temporary files, and no external media URLs. The decoder restricts pixel count and the output duration, resolution, bitrate, and file size. Vercel includes the platform binary via `functions.includeFiles`; it is excluded from the frontend bundle. See [Telegram sendVideo](https://core.telegram.org/bots/api#sendvideo) and [ffmpeg-static](https://github.com/eugeneware/ffmpeg-static) for its binary and license details.
+The server remuxes MP4 camera recordings without re-encoding their video frames. WebM recordings are converted to H.264 MP4 only when needed for Telegram. Processing uses bounded stdin/stdout memory pipes, a 30-second deadline, no temporary files and no external media URLs. Telegram receives the clean copy, with no artwork. Vercel includes the server-only ffmpeg binary through functions.includeFiles. See [Telegram sendVideo](https://core.telegram.org/bots/api#sendvideo) and [ffmpeg-static](https://github.com/eugeneware/ffmpeg-static) for format and license details.
+
+A one-minute video at maximum camera quality cannot fit through Vercel's 4.5 MB request limit. High-quality local previews/downloads and a compressed Telegram copy are the supported compromise in this storage-free deployment. Larger original video uploads require a different upload architecture; merely raising the API's file-size validation cannot bypass Vercel's limit.
 
 The automatic download runs only after a successful Telegram acknowledgement. On iPhone and other mobile browsers, the operating system may require a Save/Download confirmation. Test the venue’s target phones; browser behavior cannot guarantee silent saving into Photos.
 

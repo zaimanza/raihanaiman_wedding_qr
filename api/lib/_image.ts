@@ -116,6 +116,6 @@ export function validatePhoto(data: Buffer, suppliedMime: string): Photo {
   if (!dimensions) throw invalidRequest()
   const [width, height] = dimensions
   // Includes Telegram's size/ratio rules, plus a sensible decoded-pixel ceiling.
-  if (width <= 0 || height <= 0 || width + height > 10000 || width * height > 16_000_000 || Math.max(width, height) / Math.min(width, height) > 20) throw invalidRequest()
+  if (width <= 0 || height <= 0 || width + height > 10000 || width * height > 20_000_000 || Math.max(width, height) / Math.min(width, height) > 20) throw invalidRequest()
   return { kind: 'photo', data, mime: suppliedMime as PhotoMime, extension, width, height }
 }

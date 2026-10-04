@@ -3,8 +3,8 @@ import { weddingArt } from './weddingArt';
 
 export const HOLD_TO_RECORD_MS = 1000;
 export const MAX_RECORDING_MS = 60_000;
-export const MAX_VIDEO_BYTES = 3 * 1024 * 1024;
-const MAX_DOWNLOAD_BYTES = 12 * 1024 * 1024;
+export const MAX_VIDEO_BYTES = 4 * 1024 * 1024;
+const MAX_DOWNLOAD_BYTES = 80 * 1024 * 1024;
 
 export function recordingMimeType(): string | null {
   if (typeof MediaRecorder === 'undefined') return null;
@@ -24,20 +24,24 @@ export function recordVideo(video: HTMLVideoElement, mirrored: boolean): Recordi
   if (!mimeType || !HTMLCanvasElement.prototype.captureStream) throw new Error('Video recording is not supported');
   const bounds = video.getBoundingClientRect();
   const crop = getCaptureGeometry(video.videoWidth, video.videoHeight, bounds.width, bounds.height);
-  const scale = Math.min(1, 720 / Math.max(crop.width, crop.height));
+  const scale = Math.min(1, 1080 / Math.max(crop.width, crop.height));
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(2, Math.round(crop.width * scale / 2) * 2);
   canvas.height = Math.max(2, Math.round(crop.height * scale / 2) * 2);
   const decorated = document.createElement('canvas');
-  decorated.width = canvas.width; decorated.height = canvas.height;
+  const downloadScale = Math.min(1, 1920 / Math.max(crop.width, crop.height));
+  decorated.width = Math.max(2, Math.round(crop.width * downloadScale / 2) * 2);
+  decorated.height = Math.max(2, Math.round(crop.height * downloadScale / 2) * 2);
   const context = canvas.getContext('2d', {alpha:false});
   const downloadContext = decorated.getContext('2d', {alpha:false});
   if (!context || !downloadContext) throw new Error('Video recording is not supported');
-  const art = weddingArt(canvas.width,canvas.height);
+  const art = weddingArt(decorated.width,decorated.height);
   function paint() {
     context!.setTransform(mirrored ? -1 : 1, 0, 0, 1, mirrored ? canvas.width : 0, 0);
     context!.drawImage(video,crop.sx,crop.sy,crop.sw,crop.sh,0,0,canvas.width,canvas.height);
-    downloadContext!.drawImage(canvas,0,0);
+    downloadContext!.setTransform(mirrored ? -1 : 1,0,0,1,mirrored ? decorated.width : 0,0);
+    downloadContext!.drawImage(video,crop.sx,crop.sy,crop.sw,crop.sh,0,0,decorated.width,decorated.height);
+    downloadContext!.setTransform(1,0,0,1,0,0);
     downloadContext!.drawImage(art,0,0);
   }
   paint();
@@ -60,7 +64,7 @@ export function recordVideo(video: HTMLVideoElement, mirrored: boolean): Recordi
   try {
     for (const [index, target] of [canvas,decorated].entries()) {
       const stream = target.captureStream(24); streams.push(stream);
-      recorders.push(new MediaRecorder(stream,{mimeType,videoBitsPerSecond: index === 0 ? 300_000 : 700_000}));
+      recorders.push(new MediaRecorder(stream,{mimeType,videoBitsPerSecond: index === 0 ? 500_000 : 8_000_000}));
     }
   } catch (error) { cleanup(); throw error; }
   const result = new Promise<{blob:Blob; downloadBlob:Blob}>((resolve,reject) => {

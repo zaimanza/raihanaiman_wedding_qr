@@ -9,6 +9,12 @@ export function videoFixture(format: 'mp4' | 'webm' = 'webm'): Buffer {
 }
 
 describe('bounded video processing', () => {
+  it('preserves every decoded pixel of compatible MP4 rather than re-encoding it', async () => {
+    const input = videoFixture('mp4');
+    const output = await prepareVideo(validateVideo(input, 'video/mp4'));
+    const hashes = (bytes: Buffer) => execFileSync(ffmpeg!, ['-hide_banner','-loglevel','error','-i','pipe:0','-map','0:v:0','-f','framemd5','pipe:1'], {input: bytes}).toString().split('\n').filter(line => line && !line.startsWith('#')).map(line => line.split(',').at(-1)?.trim());
+    expect(hashes(output)).toEqual(hashes(input));
+  });
   it('preserves a full minute of video and caps longer footage at 60 seconds', async () => {
     const input = execFileSync(ffmpeg!, ['-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'testsrc2=size=320x240:rate=24', '-t', '62', '-an', '-c:v', 'libx264', '-b:v', '200k', '-movflags', 'frag_keyframe+empty_moov', '-f', 'mp4', 'pipe:1'], {maxBuffer: MAX_PHOTO_BYTES});
     const output = await prepareVideo(validateVideo(input, 'video/mp4'));

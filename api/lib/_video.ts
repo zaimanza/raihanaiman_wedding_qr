@@ -19,7 +19,7 @@ export function validateVideo(data: Buffer, mime: string): Video {
   return { kind: 'video', data, mime: mime as Video['mime'], extension: mime === 'video/mp4' ? 'mp4' : 'webm' }
 }
 
-/** Bounded decode/encode to playable H.264 MP4, entirely through memory pipes. */
+/** Remux camera MP4 without quality loss; convert WebM only when necessary. */
 export function prepareVideo(video: Video): Promise<Buffer> {
   const binary = ffmpegPath
   if (!binary) return Promise.reject(new SubmissionError(503, 'UNAVAILABLE', 'Video sending is unavailable just now. Please try again shortly ♡'))
@@ -28,10 +28,12 @@ export function prepareVideo(video: Video): Promise<Buffer> {
       '-hide_banner', '-loglevel', 'error', '-nostdin', '-max_alloc', '16777216',
       '-protocol_whitelist', 'pipe', '-f', video.mime === 'video/mp4' ? 'mov' : 'matroska',
       '-threads', '1', '-max_pixels', '8000000', '-i', 'pipe:0',
-      '-map', '0:v:0', '-an', '-t', '60', '-filter_threads', '1',
-      '-vf', 'scale=720:720:force_original_aspect_ratio=decrease:force_divisible_by=2,fps=24',
-      '-c:v', 'libx264', '-threads', '1', '-preset', 'veryfast', '-crf', '23',
-      '-maxrate', '300k', '-bufsize', '600k', '-pix_fmt', 'yuv420p',
+      '-map', '0:v:0', '-an', '-t', '60',
+      ...(video.mime === 'video/mp4' ? ['-c:v', 'copy'] : [
+        '-filter_threads', '1', '-vf', 'scale=1080:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,fps=24',
+        '-c:v', 'libx264', '-threads', '1', '-preset', 'veryfast', '-crf', '18',
+        '-maxrate', '500k', '-bufsize', '1000k', '-pix_fmt', 'yuv420p',
+      ]),
       '-movflags', 'frag_keyframe+empty_moov+default_base_moof', '-f', 'mp4', 'pipe:1',
     ], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
     let finished = false

@@ -41,7 +41,7 @@ describe('server photo validation', () => {
     expect(() => validatePhoto(jpegHeader(0, 1080), 'image/jpeg')).toThrow()
     expect(() => validatePhoto(jpegHeader(6000, 5000), 'image/jpeg')).toThrow()
     expect(() => validatePhoto(jpegHeader(4000, 100), 'image/jpeg')).toThrow()
-    expect(() => validatePhoto(jpegHeader(4096, 4096), 'image/jpeg')).toThrow()
+    expect(() => validatePhoto(jpegHeader(5000, 5000), 'image/jpeg')).toThrow()
   })
   it('rejects missing image content and malformed container lengths', () => {
     const noDataPng = png()

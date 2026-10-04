@@ -79,7 +79,7 @@ async (page) => {
       }
       return {clean:await frame(window.__submittedClean),art:await frame(window.__downloadedArt)};
     },kind);
-    assert(result.clean.width === result.art.width && result.clean.height === result.art.height, `${kind}: decorated download preserves dimensions`);
+    assert(result.art.width >= result.clean.width && result.art.height >= result.clean.height && Math.abs(result.art.width/result.art.height-result.clean.width/result.clean.height)<.01, `${kind}: decorated download retains at least the upload resolution and composition`);
     assert(result.clean.top < 100 && result.clean.corner < 100, `${kind}: Telegram upload contains no art`);
     assert(result.art.top > result.clean.top + 150 && result.art.corner > result.clean.corner + 40, `${kind}: download contains title/top flowers and bottom flowers ${JSON.stringify(result)}`);
     if (kind==='video') assert(Math.abs(result.art.duration-result.clean.duration)<.25, 'video: clean and decorated copies preserve the same duration');

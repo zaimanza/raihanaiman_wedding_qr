@@ -5,7 +5,7 @@ import { Icon } from '../components/Icon';
 import { useMemory } from '../context/MemoryContext';
 import { useCamera } from '../hooks/useCamera';
 import { decoratePhoto } from '../utils/weddingArt';
-import { capturePhoto } from '../utils/image';
+import { capturePhoto, preparePhotoForUpload } from '../utils/image';
 import { HOLD_TO_RECORD_MS, MAX_RECORDING_MS, recordingMimeType, recordVideo, type RecordingSession } from '../utils/recording';
 
 export function CameraPage() {
@@ -52,8 +52,9 @@ export function CameraPage() {
     setCapturing(true);
     setCaptureError('');
     try {
-      const blob = await capturePhoto(videoRef.current, mirrored);
-      const downloadBlob = await decoratePhoto(blob);
+      const original = await capturePhoto(videoRef.current, mirrored);
+      const downloadBlob = await decoratePhoto(original);
+      const blob = await preparePhotoForUpload(original);
       if (!mounted.current) return;
       saveMedia(blob, 'photo', downloadBlob);
       navigate('/summary');

@@ -50,13 +50,13 @@ export async function sendToTelegram(
     form.append('video', new Blob([new Uint8Array(mp4)], { type: 'video/mp4' }), 'wedding-memory.mp4')
     form.append('supports_streaming', 'true')
   } else {
-    form.append('photo', new Blob([new Uint8Array(media.data)], { type: media.mime }), `wedding-memory.${media.extension}`)
+    form.append('document', new Blob([new Uint8Array(media.data)], { type: media.mime }), `wedding-memory.${media.extension}`)
   }
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
   timeout.unref()
   try {
-    const response = await fetchImplementation(`https://api.telegram.org/bot${configuration.botToken}/${media.kind === 'video' ? 'sendVideo' : 'sendPhoto'}`, {
+    const response = await fetchImplementation(`https://api.telegram.org/bot${configuration.botToken}/${media.kind === 'video' ? 'sendVideo' : 'sendDocument'}`, {
       method: 'POST', body: form, signal: controller.signal, redirect: 'error',
     })
     let payload: unknown

@@ -40,7 +40,7 @@ async (page) => {
     });
     assert(pixels.topMarks > 150, `${facing}: photo preview includes wedding title, date and top-left flowers`);
     assert(pixels.cornerMarks > 40, `${facing}: photo preview includes lower-right floral artwork`);
-    assert(pixels.type === 'image/jpeg' && pixels.bytes > 0 && Math.max(pixels.width, pixels.height) <= 2560, `${facing}: decorated preview respects JPEG and photo resolution`);
+    assert(pixels.type === 'image/jpeg' && pixels.bytes > 0 && Math.max(pixels.width, pixels.height) <= 4096, `${facing}: decorated preview respects JPEG and photo resolution`);
     await page.screenshot({ path: `output/playwright/decorated-summary-${facing}.png` });
     await page.getByRole('button', { name: 'Retake' }).click();
     await ready();

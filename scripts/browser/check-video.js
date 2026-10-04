@@ -37,7 +37,7 @@ async (page) => {
   await page.waitForTimeout(1000); await page.mouse.up();
   await page.waitForURL('**/summary');
   await page.locator('.captured-photo').evaluate(video => new Promise(resolve => { if (video.readyState >= 1) resolve(); else video.onloadedmetadata=resolve; }));
-  assert(await page.locator('.captured-photo').evaluate(video => video.tagName === 'VIDEO' && video.videoHeight <= 720 && video.videoWidth <= 720 && video.duration > 0), 'recording is an actual bounded-resolution playable video');
+  assert(await page.locator('.captured-photo').evaluate(video => video.tagName === 'VIDEO' && video.videoHeight <= 1920 && video.videoWidth <= 1920 && video.duration > 0), 'recording is an actual bounded-resolution playable video');
   const wish = page.getByRole('textbox',{name:'Your wedding wish',exact:true});
   await wish.fill('Video wish stays safe ♡');
   for (const scheme of ['light','dark']) {
