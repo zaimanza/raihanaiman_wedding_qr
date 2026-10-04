@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { shouldMirrorCamera } from '../utils/cameraFacing';
 
 export type CameraStatus = 'requesting' | 'ready' | 'error' | 'paused';
 type Facing = 'environment' | 'user';
@@ -245,7 +246,7 @@ export function useCamera() {
         // another camera, use the working device on a later resume/retry.
         if (deviceId) desiredDeviceRef.current = currentDeviceRef.current;
         capabilitiesRef.current = getFacingCapabilities(track);
-        setMirrored(actualFacingRef.current === 'user');
+        setMirrored(shouldMirrorCamera(actualFacingRef.current, track.label));
 
         const onEnded = () => {
           if (!isCurrent() || streamRef.current !== stream) return;
@@ -283,6 +284,8 @@ export function useCamera() {
         void Promise.resolve().then(() => mediaDevices.enumerateDevices()).then((devices) => {
           if (!isCurrent() || streamRef.current !== stream) return;
           devicesRef.current = devices.filter((device) => device.kind === 'videoinput' && device.deviceId);
+          const deviceLabel = devicesRef.current.find(device => device.deviceId === currentDeviceRef.current)?.label ?? '';
+          setMirrored(shouldMirrorCamera(actualFacingRef.current, `${track.label} ${deviceLabel}`));
           updateSwitchAvailability();
         }).catch(() => undefined);
       } catch (cause) {
