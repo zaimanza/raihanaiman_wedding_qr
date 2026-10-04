@@ -14,7 +14,7 @@ async (page) => {
   await page.waitForURL('**/summary');
   await page.waitForFunction(() => window.__testCameraTracks.every(track => track.readyState === 'ended'));
   assert(await page.evaluate(() => window.__testCameraTracks.every(track => track.readyState === 'ended')), 'capture navigation stops all camera tracks');
-  await page.getByRole('textbox', { name: 'Your wedding wish (optional)' }).fill('Forever happy ❤️');
+  await page.getByRole('textbox', { name: 'Your wedding wish', exact: true }).fill('Forever happy ❤️');
   let attempts = 0;
   let release;
   const pending = new Promise(resolve => { release = resolve; });

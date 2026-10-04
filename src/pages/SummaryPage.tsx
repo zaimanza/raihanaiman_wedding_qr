@@ -106,7 +106,7 @@ export function SummaryPage() {
           </figure>
 
           <div className="wish-field">
-            <label htmlFor="wish">Your wedding wish <span>(optional)</span></label>
+            <label htmlFor="wish">Your wedding wish</label>
             <textarea id="wish" name="wish" value={wish} onChange={event => setWish(event.target.value)} maxLength={MAX_WISH_LENGTH} rows={3} placeholder="Leave us a little wish... ✨" disabled={phase !== 'idle'} aria-describedby="wish-counter" />
             <div className="wish-footnote"><span>A few words. A lifetime of love.</span><span id="wish-counter">{wish.length} / {MAX_WISH_LENGTH}</span></div>
           </div>
