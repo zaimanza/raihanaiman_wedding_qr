@@ -42,6 +42,15 @@ describe('bounded video processing', () => {
       expect([...pcm].some(byte=>byte!==0)).toBe(true);
     });
   }
+  it('retains 1920px detail and audio in a high-quality short WebM upload', async () => {
+    const input = execFileSync(ffmpeg!, ['-hide_banner','-loglevel','error','-f','lavfi','-i','testsrc2=size=1080x1920:rate=24','-f','lavfi','-i','sine=frequency=660:sample_rate=48000','-t','1','-c:v','libvpx','-b:v','2500k','-deadline','realtime','-c:a','libopus','-f','webm','pipe:1'], {maxBuffer:MAX_PHOTO_BYTES});
+    const output = await prepareVideo(validateVideo(input, 'video/webm'));
+    expect(output.length).toBeLessThan(MAX_PHOTO_BYTES);
+    const pixels = execFileSync(ffmpeg!, ['-hide_banner','-loglevel','error','-i','pipe:0','-frames:v','1','-f','rawvideo','-pix_fmt','gray','pipe:1'], {input:output,maxBuffer:3_000_000});
+    expect(pixels.length).toBe(1080 * 1920);
+    const pcm = execFileSync(ffmpeg!, ['-hide_banner','-loglevel','error','-i','pipe:0','-map','0:a:0','-f','s16le','pipe:1'], {input:output});
+    expect([...pcm].some(byte=>byte!==0)).toBe(true);
+  }, 30_000);
   it('rejects wrong MIME types, signatures, empty or oversized uploads', () => {
     const webm = videoFixture();
     expect(() => validateVideo(webm, 'video/mp4')).toThrow();

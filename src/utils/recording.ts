@@ -18,7 +18,7 @@ export interface RecordingSession {
   result: Promise<{blob: Blob; downloadBlob: Blob}>;
 }
 
-/** Encode clean Telegram footage and a decorated download together, without replay/export delays. */
+/** Keep the full-minute encoder, and prefer a sharper clean short clip when it fits. */
 export function recordVideo(video: HTMLVideoElement, mirrored: boolean, microphone: MediaStream): RecordingSession {
   const mimeType = recordingMimeType();
   if (!mimeType || !HTMLCanvasElement.prototype.captureStream) throw new Error('Video recording is not supported');
@@ -32,9 +32,12 @@ export function recordVideo(video: HTMLVideoElement, mirrored: boolean, micropho
   const downloadScale = Math.min(1, 1920 / Math.max(crop.width, crop.height));
   decorated.width = Math.max(2, Math.round(crop.width * downloadScale / 2) * 2);
   decorated.height = Math.max(2, Math.round(crop.height * downloadScale / 2) * 2);
+  const sharper = document.createElement('canvas');
+  sharper.width = decorated.width; sharper.height = decorated.height;
+  const sharperContext = sharper.getContext('2d', {alpha:false});
   const context = canvas.getContext('2d', {alpha:false});
   const downloadContext = decorated.getContext('2d', {alpha:false});
-  if (!context || !downloadContext) throw new Error('Video recording is not supported');
+  if (!context || !downloadContext || !sharperContext) throw new Error('Video recording is not supported');
   const art = weddingArt(decorated.width,decorated.height);
   function paint() {
     context!.setTransform(mirrored ? -1 : 1, 0, 0, 1, mirrored ? canvas.width : 0, 0);
@@ -43,12 +46,17 @@ export function recordVideo(video: HTMLVideoElement, mirrored: boolean, micropho
     downloadContext!.drawImage(video,crop.sx,crop.sy,crop.sw,crop.sh,0,0,decorated.width,decorated.height);
     downloadContext!.setTransform(1,0,0,1,0,0);
     downloadContext!.drawImage(art,0,0);
+    if (sharperAvailable) {
+      sharperContext!.setTransform(mirrored ? -1 : 1,0,0,1,mirrored ? sharper.width : 0,0);
+      sharperContext!.drawImage(video,crop.sx,crop.sy,crop.sw,crop.sh,0,0,sharper.width,sharper.height);
+    }
   }
-  paint();
   const streams: MediaStream[] = [];
   const recorders: MediaRecorder[] = [];
-  const chunks: Blob[][] = [[],[]];
-  const sizes = [0,0];
+  const chunks: Blob[][] = [[],[],[]];
+  const sizes = [0,0,0];
+  let sharperAvailable = true;
+  paint();
   let interval: number | undefined;
   let timer: number | undefined;
   let cancelled = false;
@@ -59,14 +67,20 @@ export function recordVideo(video: HTMLVideoElement, mirrored: boolean, micropho
     window.clearInterval(interval); window.clearTimeout(timer);
     microphone.getTracks().forEach(track => track.stop());
     streams.forEach(stream => stream.getTracks().forEach(track => track.stop()));
-    canvas.width = canvas.height = decorated.width = decorated.height = art.width = art.height = 0;
+    canvas.width = canvas.height = decorated.width = decorated.height = art.width = art.height = sharper.width = sharper.height = 0;
   }
   function stop() { recorders.forEach(recorder => {if (recorder.state !== 'inactive') recorder.stop();}); }
   try {
-    for (const [index, target] of [canvas,decorated].entries()) {
+    for (const [index, target] of [canvas,decorated,sharper].entries()) {
       const stream = target.captureStream(24); streams.push(stream);
       microphone.getAudioTracks().forEach(track => stream.addTrack(track));
-      recorders.push(new MediaRecorder(stream,{mimeType,videoBitsPerSecond: index === 0 ? 400_000 : 8_000_000, audioBitsPerSecond: index === 0 ? 64_000 : 96_000}));
+      try {
+        recorders.push(new MediaRecorder(stream,{mimeType,videoBitsPerSecond: index === 0 ? 400_000 : index === 1 ? 8_000_000 : 2_500_000, audioBitsPerSecond: index === 0 ? 64_000 : 96_000}));
+      } catch (error) {
+        if (index !== 2) throw error;
+        sharperAvailable = false;
+        stream.getVideoTracks().forEach(track => track.stop());
+      }
     }
   } catch (error) { cleanup(); throw error; }
   const result = new Promise<{blob:Blob; downloadBlob:Blob}>((resolve,reject) => {
@@ -76,20 +90,32 @@ export function recordVideo(video: HTMLVideoElement, mirrored: boolean, micropho
       cleanup();
       const blobs = recorders.map((recorder,index) => new Blob(chunks[index],{type:recorder.mimeType.split(';')[0]}));
       chunks.forEach(parts => {parts.length = 0;});
-      if (cancelled || failed || blobs.some(blob => !blob.size) || blobs[0].size > MAX_VIDEO_BYTES || blobs[1].size > MAX_DOWNLOAD_BYTES) reject(new Error('Recording unavailable'));
-      else resolve({blob:blobs[0],downloadBlob:blobs[1]});
+      if (cancelled || failed || (!blobs[0].size || !blobs[1].size) || blobs[0].size > MAX_VIDEO_BYTES || blobs[1].size > MAX_DOWNLOAD_BYTES) reject(new Error('Recording unavailable'));
+      else resolve({blob:sharperAvailable && blobs[2].size > 0 && blobs[2].size <= MAX_VIDEO_BYTES ? blobs[2] : blobs[0],downloadBlob:blobs[1]});
     }
     recorders.forEach((recorder,index) => {
       recorder.ondataavailable = event => {
-        if (event.data.size) {chunks[index].push(event.data); sizes[index] += event.data.size;}
-        const limit = index === 0 ? MAX_VIDEO_BYTES : MAX_DOWNLOAD_BYTES;
-        if (sizes[index] >= limit - 512 * 1024) stop();
+        if (event.data.size && (index !== 2 || sharperAvailable)) {chunks[index].push(event.data); sizes[index] += event.data.size;}
+        const limit = index === 1 ? MAX_DOWNLOAD_BYTES : MAX_VIDEO_BYTES;
+        if (sizes[index] >= limit - 512 * 1024) {
+          if (index === 2) { sharperAvailable = false; chunks[index].length = 0; if (recorder.state !== 'inactive') recorder.stop(); }
+          else stop();
+        }
       };
-      recorder.onerror = () => {failed = true; stop();};
+      recorder.onerror = () => {
+        if (index === 2) { sharperAvailable = false; chunks[index].length = 0; if (recorder.state !== 'inactive') recorder.stop(); }
+        else {failed = true; stop();}
+      };
       recorder.onstop = () => {if (++stopped === recorders.length) finish();};
     });
     try {
-      recorders.forEach(recorder => recorder.start(250));
+      recorders.forEach((recorder,index) => {
+        try { recorder.start(250); }
+        catch (error) {
+          if (index !== 2) throw error;
+          sharperAvailable = false; stopped++;
+        }
+      });
       interval = window.setInterval(() => {try {paint();} catch {failed = true; stop();}},1000 / 24);
       timer = window.setTimeout(stop,MAX_RECORDING_MS);
     } catch {

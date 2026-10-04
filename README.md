@@ -86,6 +86,7 @@ npx @playwright/cli -s=wedding run-code --filename=scripts/browser/check-flow.js
 npx @playwright/cli -s=wedding run-code --filename=scripts/browser/check-frame.js
 npx @playwright/cli -s=wedding run-code --filename=scripts/browser/check-preview.js
 npx @playwright/cli -s=wedding run-code --filename=scripts/browser/check-video.js
+npx @playwright/cli -s=wedding run-code --filename=scripts/browser/check-adaptive-video.js
 npx @playwright/cli -s=wedding run-code --filename=scripts/browser/check-layout.js
 npx @playwright/cli -s=wedding close
 ```
@@ -186,9 +187,9 @@ Telegram's published guidance advises roughly one message per second to a single
 
 ## Video processing
 
-Video previews/downloads retain up to a 1920px long edge at 24fps and target 8Mbps. A separate clean upload encoder uses up to 1080px and 0.4Mbps video plus 64kbps audio, allowing a full 60 seconds to fit below 4 MiB. Both encoders preserve the same crop and mirror direction; no second playback/export wait is needed after submission. Decorated recordings are memory-only and bounded to 80 MiB. Slow devices may deliver fewer frames or honor bitrate hints differently, so recordings still stop early if approaching their size cap.
+Video previews/downloads retain up to a 1920px long edge at 24fps and target 8Mbps. Clean short clips also target a 1920px long edge at 2.5Mbps with audio. When this copy approaches the upload budget, it is discarded independently and the ongoing 1080px / 0.4Mbps clean encoder supplies the full-minute upload instead. This fallback does not stop the decorated recording. All encoders preserve the same crop and mirror direction; no second playback/export wait is needed after submission. Decorated recordings are memory-only and bounded to 80 MiB. Slow devices may deliver fewer frames or honor bitrate hints differently, so recordings still stop early if approaching their size cap.
 
-The server remuxes MP4 camera recordings without re-encoding their video frames. WebM recordings are converted to H.264 MP4 only when needed for Telegram. Processing uses bounded stdin/stdout memory pipes, a 30-second deadline, no temporary files and no external media URLs. Telegram receives the clean copy with sound, with no artwork. Audio is encoded as AAC for Telegram compatibility. Vercel includes the server-only ffmpeg binary through functions.includeFiles. See [Telegram sendVideo](https://core.telegram.org/bots/api#sendvideo) and [ffmpeg-static](https://github.com/eugeneware/ffmpeg-static) for format and license details.
+The server remuxes MP4 camera recordings without re-encoding their video frames. WebM recordings are converted to H.264 MP4 only when needed for Telegram. The server measures their decoded duration and budgets the output bitrate accordingly, retaining up to 1920px detail for short clips without upscaling smaller footage. Processing uses bounded stdin/stdout memory pipes, a 30-second deadline, no temporary files and no external media URLs. Telegram receives the clean copy with sound, with no artwork. Audio is encoded as AAC for Telegram compatibility. Vercel includes the server-only ffmpeg binary through functions.includeFiles. See [Telegram sendVideo](https://core.telegram.org/bots/api#sendvideo) and [ffmpeg-static](https://github.com/eugeneware/ffmpeg-static) for format and license details.
 
 A one-minute video at maximum camera quality cannot fit through Vercel's 4.5 MB request limit. High-quality local previews/downloads and a compressed Telegram copy are the supported compromise in this storage-free deployment. Larger original video uploads require a different upload architecture; merely raising the API's file-size validation cannot bypass Vercel's limit.
 

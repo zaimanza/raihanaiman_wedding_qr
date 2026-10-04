@@ -19,10 +19,46 @@ export function validateVideo(data: Buffer, mime: string): Video {
   return { kind: 'video', data, mime: mime as Video['mime'], extension: mime === 'video/mp4' ? 'mp4' : 'webm' }
 }
 
+/** Decode bounded input to measure duration; browser WebM often omits container duration. */
+async function videoDuration(video: Video, binary: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(binary, [
+      '-hide_banner', '-loglevel', 'error', '-nostdin', '-max_alloc', '16777216',
+      '-protocol_whitelist', 'pipe', '-threads', '1', '-max_pixels', '8000000',
+      '-i', 'pipe:0', '-map', '0:v:0', '-map', '0:a:0?', '-t', '60',
+      '-progress', 'pipe:1', '-f', 'null', '-',
+    ], {stdio:['pipe','pipe','pipe'], windowsHide:true});
+    let duration = 0;
+    let pending = '';
+    let done = false;
+    const fail = () => {
+      if (done) return;
+      done = true; clearTimeout(timer); child.kill('SIGKILL');
+      reject(new SubmissionError(422, 'INVALID_VIDEO', 'We couldn’t prepare this video. Please record it again ♡'));
+    };
+    const timer = setTimeout(fail, 15_000); timer.unref();
+    child.on('error', fail); child.stdin.on('error', () => undefined); child.stderr.resume();
+    child.stdout.on('data', (chunk: Buffer) => {
+      pending += chunk.toString();
+      const lines = pending.split('\n'); pending = lines.pop() || '';
+      for (const line of lines) if (/^out_time_us=\d+$/.test(line)) duration = Math.max(duration, Number(line.slice(12)) / 1_000_000);
+    });
+    child.on('close', code => {
+      if (done) return;
+      if (code !== 0 || duration <= 0) { fail(); return; }
+      done = true; clearTimeout(timer); resolve(Math.min(60, duration));
+    });
+    child.stdin.end(video.data);
+  });
+}
+
 /** Remux camera MP4 without quality loss; convert WebM only when necessary. */
-export function prepareVideo(video: Video): Promise<Buffer> {
+export async function prepareVideo(video: Video): Promise<Buffer> {
   const binary = ffmpegPath
   if (!binary) return Promise.reject(new SubmissionError(503, 'UNAVAILABLE', 'Video sending is unavailable just now. Please try again shortly ♡'))
+  const duration = video.mime === 'video/webm' ? await videoDuration(video, binary) : 60;
+  // Spend the available bytes on detail for short clips, reserving audio/container room.
+  const bitrateKbps = Math.max(400, Math.min(2500, Math.floor((3.5 * 1024 * 1024 * 8 / duration - 64_000) / 1000)));
   return new Promise((resolve, reject) => {
     const process = spawn(binary, [
       '-hide_banner', '-loglevel', 'error', '-nostdin', '-max_alloc', '16777216',
@@ -30,9 +66,9 @@ export function prepareVideo(video: Video): Promise<Buffer> {
       '-threads', '1', '-max_pixels', '8000000', '-i', 'pipe:0',
       '-map', '0:v:0', '-map', '0:a:0?', '-t', '60', '-c:a', 'aac', '-b:a', '64k',
       ...(video.mime === 'video/mp4' ? ['-c:v', 'copy'] : [
-        '-filter_threads', '1', '-vf', 'scale=1080:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,fps=24',
+        '-filter_threads', '1', '-vf', "scale=w='min(1920,iw)':h='min(1920,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2,fps=24",
         '-c:v', 'libx264', '-threads', '1', '-preset', 'veryfast', '-crf', '18',
-        '-maxrate', '400k', '-bufsize', '1000k', '-pix_fmt', 'yuv420p',
+        '-maxrate', `${bitrateKbps}k`, '-bufsize', `${Math.min(1000, bitrateKbps)}k`, '-pix_fmt', 'yuv420p',
       ]),
       '-movflags', 'frag_keyframe+empty_moov+default_base_moof', '-f', 'mp4', 'pipe:1',
     ], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
