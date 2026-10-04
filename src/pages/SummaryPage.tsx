@@ -113,7 +113,7 @@ export function SummaryPage() {
           <figure className="photo-frame">
             <button ref={photoButton} type="button" className="photo-preview-trigger" aria-label={media.kind === 'photo' ? 'Enlarge photo' : 'Enlarge video'} aria-haspopup="dialog" aria-controls="media-preview" onClick={() => setPreviewOpen(true)} disabled={phase !== 'idle'}>
               {media.kind === 'photo' ? <img className="captured-photo" src={media.previewUrl} alt="Your captured wedding memory" />
-                : <><video className="captured-photo" src={media.previewUrl} playsInline muted preload="metadata" aria-label="Your recorded wedding memory" /><span className="video-play-badge" aria-hidden="true"><Icon name="play" /></span></>}
+                : <video className="captured-photo" src={media.previewUrl} autoPlay loop muted playsInline preload="auto" aria-label="Your recorded wedding memory" />}
             </button>
           </figure>
 
