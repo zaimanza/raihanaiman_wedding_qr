@@ -30,6 +30,7 @@ async (page) => {
   bounds = await shutter.boundingBox();
   await page.mouse.move(bounds.x + bounds.width/2,bounds.y + bounds.height/2);
   await page.mouse.down(); await page.waitForTimeout(1300);
+  await page.getByRole('button',{name:'Stop recording',exact:true}).waitFor({timeout:10000});
   assert(await page.getByRole('button',{name:'Stop recording',exact:true}).isVisible(), 'holding over one second starts recording');
   assert(await page.getByRole('button',{name:'Switch front and rear cameras'}).isDisabled(), 'camera switch is disabled while recording');
   assert(new URL(page.url()).pathname === '/', 'video does not navigate before release');
@@ -73,6 +74,7 @@ async (page) => {
   await page.keyboard.press('Tab');
   await shutter.focus();
   await page.keyboard.down('Space'); await page.waitForTimeout(1300);
+  await page.getByRole('button',{name:'Stop recording',exact:true}).waitFor({timeout:10000});
   assert(await page.getByRole('button',{name:'Stop recording',exact:true}).isVisible(), 'keyboard hold also starts recording');
   await page.keyboard.up('Space'); await page.waitForURL('**/summary');
   await page.getByRole('button',{name:'Retake',exact:true}).click();
@@ -81,6 +83,7 @@ async (page) => {
   bounds = await shutter.boundingBox();
   await page.mouse.move(bounds.x + bounds.width/2,bounds.y + bounds.height/2);
   await page.mouse.down(); await page.waitForTimeout(1300);
+  await page.getByRole('button',{name:'Stop recording',exact:true}).waitFor({timeout:10000});
   await page.dispatchEvent('.shutter','pointercancel'); await page.mouse.up();
   await page.waitForFunction(() => !document.querySelector('.shutter').classList.contains('is-recording'));
   assert(new URL(page.url()).pathname === '/', 'cancelled gesture discards recording safely');

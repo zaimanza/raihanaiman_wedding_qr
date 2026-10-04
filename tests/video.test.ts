@@ -16,7 +16,7 @@ describe('bounded video processing', () => {
     expect(hashes(output)).toEqual(hashes(input));
   });
   it('preserves a full minute of video and caps longer footage at 60 seconds', async () => {
-    const input = execFileSync(ffmpeg!, ['-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'testsrc2=size=320x240:rate=24', '-t', '62', '-an', '-c:v', 'libx264', '-b:v', '200k', '-movflags', 'frag_keyframe+empty_moov', '-f', 'mp4', 'pipe:1'], {maxBuffer: MAX_PHOTO_BYTES});
+    const input = execFileSync(ffmpeg!, ['-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'testsrc2=size=320x240:rate=24', '-f', 'lavfi', '-i', 'sine=frequency=660:sample_rate=48000', '-t', '62', '-c:a', 'aac', '-b:a', '48k', '-c:v', 'libx264', '-b:v', '200k', '-movflags', 'frag_keyframe+empty_moov', '-f', 'mp4', 'pipe:1'], {maxBuffer: MAX_PHOTO_BYTES});
     const output = await prepareVideo(validateVideo(input, 'video/mp4'));
     expect(output.length).toBeLessThan(MAX_PHOTO_BYTES);
     const progress = execFileSync(ffmpeg!, ['-hide_banner', '-loglevel', 'error', '-i', 'pipe:0', '-progress', 'pipe:1', '-f', 'null', '-'], { input: output }).toString();
@@ -31,6 +31,15 @@ describe('bounded video processing', () => {
       expect(output.length).toBeLessThan(MAX_PHOTO_BYTES);
       const info = execFileSync(ffmpeg!, ['-hide_banner','-i','pipe:0','-f','null','-'], {input: output, stdio:['pipe','pipe','pipe']});
       expect(info.length).toBe(0); // Full successful decode; bad videos make execFileSync throw.
+    });
+  }
+  for (const format of ['mp4', 'webm'] as const) {
+    it(`preserves audible audio through ${format} processing`, async () => {
+      const input = execFileSync(ffmpeg!, ['-hide_banner','-loglevel','error','-f','lavfi','-i','testsrc2=size=160x120:rate=12','-f','lavfi','-i','sine=frequency=660:sample_rate=48000','-t','0.6','-c:v',format==='mp4'?'libx264':'libvpx','-c:a',format==='mp4'?'aac':'libopus',...(format==='mp4'?['-movflags','frag_keyframe+empty_moov']:[]),'-f',format,'pipe:1']);
+      const output = await prepareVideo(validateVideo(input,`video/${format}`));
+      const pcm = execFileSync(ffmpeg!, ['-hide_banner','-loglevel','error','-i','pipe:0','-map','0:a:0','-f','s16le','pipe:1'], {input:output});
+      expect(pcm.length).toBeGreaterThan(1000);
+      expect([...pcm].some(byte=>byte!==0)).toBe(true);
     });
   }
   it('rejects wrong MIME types, signatures, empty or oversized uploads', () => {

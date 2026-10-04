@@ -41,7 +41,7 @@ async (page) => {
   const video=await page.locator('.captured-photo').evaluate(video=>({width:video.videoWidth,height:video.videoHeight}));
   assert(video.height===1920,'video preview/download retains 1920px source detail instead of 720px');
   assert(await page.evaluate(()=>window.__qualityEncoders.some(option=>option.videoBitsPerSecond===8_000_000)),'decorated video targets 8Mbps rather than 0.7Mbps');
-  assert(await page.evaluate(()=>window.__qualityEncoders.some(option=>option.videoBitsPerSecond===500_000)),'one-minute upload encoder uses the larger 4MiB budget');
+  assert(await page.evaluate(()=>window.__qualityEncoders.some(option=>option.videoBitsPerSecond===430_000)),'one-minute upload encoder uses the larger 4MiB budget');
   await page.getByRole('button',{name:'Enlarge video',exact:true}).click();
   await page.waitForFunction(()=>{const v=document.querySelector('dialog video');return v && v.readyState>=2 && !v.paused;});
   await page.screenshot({path:'output/playwright/high-quality-video-preview.png'});

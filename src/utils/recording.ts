@@ -8,7 +8,7 @@ const MAX_DOWNLOAD_BYTES = 80 * 1024 * 1024;
 
 export function recordingMimeType(): string | null {
   if (typeof MediaRecorder === 'undefined') return null;
-  return ['video/mp4;codecs=avc1.42E01E', 'video/mp4', 'video/webm;codecs=vp8', 'video/webm']
+  return ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp8,opus', 'video/webm']
     .find(type => MediaRecorder.isTypeSupported(type)) ?? null;
 }
 
@@ -19,7 +19,7 @@ export interface RecordingSession {
 }
 
 /** Encode clean Telegram footage and a decorated download together, without replay/export delays. */
-export function recordVideo(video: HTMLVideoElement, mirrored: boolean): RecordingSession {
+export function recordVideo(video: HTMLVideoElement, mirrored: boolean, microphone: MediaStream): RecordingSession {
   const mimeType = recordingMimeType();
   if (!mimeType || !HTMLCanvasElement.prototype.captureStream) throw new Error('Video recording is not supported');
   const bounds = video.getBoundingClientRect();
@@ -57,6 +57,7 @@ export function recordVideo(video: HTMLVideoElement, mirrored: boolean): Recordi
   let stopped = 0;
   function cleanup() {
     window.clearInterval(interval); window.clearTimeout(timer);
+    microphone.getTracks().forEach(track => track.stop());
     streams.forEach(stream => stream.getTracks().forEach(track => track.stop()));
     canvas.width = canvas.height = decorated.width = decorated.height = art.width = art.height = 0;
   }
@@ -64,7 +65,8 @@ export function recordVideo(video: HTMLVideoElement, mirrored: boolean): Recordi
   try {
     for (const [index, target] of [canvas,decorated].entries()) {
       const stream = target.captureStream(24); streams.push(stream);
-      recorders.push(new MediaRecorder(stream,{mimeType,videoBitsPerSecond: index === 0 ? 500_000 : 8_000_000}));
+      microphone.getAudioTracks().forEach(track => stream.addTrack(track));
+      recorders.push(new MediaRecorder(stream,{mimeType,videoBitsPerSecond: index === 0 ? 430_000 : 8_000_000, audioBitsPerSecond: index === 0 ? 48_000 : 96_000}));
     }
   } catch (error) { cleanup(); throw error; }
   const result = new Promise<{blob:Blob; downloadBlob:Blob}>((resolve,reject) => {

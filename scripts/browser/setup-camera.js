@@ -6,6 +6,20 @@ async (page) => {
     window.__testDesiredMode = 'ready';
     navigator.mediaDevices.getUserMedia = async (constraints) => {
       window.__testCameraRequests.push(constraints);
+      if (constraints.audio && constraints.video === false) {
+        if (window.__microphoneDenied) throw new DOMException('Microphone denied for test', 'NotAllowedError');
+        const audio = new AudioContext();
+        const destination = audio.createMediaStreamDestination();
+        const tone = audio.createOscillator(); tone.frequency.value = 660;
+        tone.connect(destination); tone.start(); await audio.resume();
+        destination.stream.getAudioTracks().forEach(track => {
+          const stop = track.stop.bind(track);
+          let stopped = false;
+          track.stop = () => { if (stopped) return; stopped = true; stop(); tone.stop(); void audio.close(); };
+        });
+        window.__testMicrophone = destination.stream;
+        return destination.stream;
+      }
       if (window.__testCameraMode === 'denied') throw new DOMException('Denied for test', 'NotAllowedError');
       if (window.__testCameraMode === 'missing') throw new DOMException('Missing for test', 'NotFoundError');
       const requested = constraints.video?.deviceId?.exact;

@@ -16,7 +16,7 @@ A mobile-first wedding camera. Guests scan your QR code, capture a photo or shor
                          “Sent with love” → fresh camera
 ```
 
-The rear camera is preferred. Selfie cameras and desktop webcams are mirrored in the live preview and captured photos/videos; identified rear cameras remain unmirrored. Wedding lettering stays readable. Tap the shutter for a photo; hold it for at least one second to start a silent video, then release to finish. Videos stop automatically at 60 seconds or earlier if approaching the upload size limit. A camera switch appears when a second camera is available. Camera permission is the only device permission requested: recordings do not include microphone audio. Browsers without MediaRecorder/canvas recording still support photos.
+The rear camera is preferred. Selfie cameras and desktop webcams are mirrored in the live preview and captured photos/videos; identified rear cameras remain unmirrored. Wedding lettering stays readable. Tap the shutter for a photo; hold it for at least one second to start a video with sound, then release to finish. Videos stop automatically at 60 seconds or earlier if approaching the upload size limit. A camera switch appears when a second camera is available. Photos request only camera permission. Holding to record also requests microphone permission; allow it and keep holding to start. Both saved video copies include microphone audio. Microphone tracks stop after recording, cancellation or navigation. The Summary card loops silently; the enlarged preview plays with sound and controls. Browsers without MediaRecorder/canvas recording still support photos.
 
 The Summary route requires a captured photo or video in React memory. Direct entry, another tab, a bookmark, or refreshing `/summary` returns to `/`. Retake discards the draft. Failed uploads preserve the photo and wish so the guest can retry. Successful delivery starts a download of the photo/video with the floral artwork, wedding names and date, shows the success state for two seconds, clears the draft, and restarts the camera. The browser controls its Downloads/Save prompt; this does not automatically write to a phone’s Photos gallery. A manual Save control is also available during the success state. Video previews open a modal with native play/pause controls and a circular close button.
 
@@ -26,7 +26,7 @@ React, TypeScript, Vite, React Router, native CSS, `getUserMedia`, and Canvas po
 
 ```text
 Camera frame
-  → resized JPEG or silent MP4/WebM Blob in browser memory
+  → resized JPEG or MP4/WebM with audio Blob in browser memory
   → POST /api/submit (multipart/form-data)
   → Vercel function memory
   → Telegram Bot API sendDocument / sendVideo
@@ -186,9 +186,9 @@ Telegram's published guidance advises roughly one message per second to a single
 
 ## Video processing
 
-Video previews/downloads retain up to a 1920px long edge at 24fps and target 8Mbps. A separate clean upload encoder uses up to 1080px and 0.5Mbps, allowing a full 60 seconds to fit below 4 MiB. Both encoders preserve the same crop and mirror direction; no second playback/export wait is needed after submission. Decorated recordings are memory-only and bounded to 80 MiB. Slow devices may deliver fewer frames or honor bitrate hints differently, so recordings still stop early if approaching their size cap.
+Video previews/downloads retain up to a 1920px long edge at 24fps and target 8Mbps. A separate clean upload encoder uses up to 1080px and 0.43Mbps video plus 48kbps audio, allowing a full 60 seconds to fit below 4 MiB. Both encoders preserve the same crop and mirror direction; no second playback/export wait is needed after submission. Decorated recordings are memory-only and bounded to 80 MiB. Slow devices may deliver fewer frames or honor bitrate hints differently, so recordings still stop early if approaching their size cap.
 
-The server remuxes MP4 camera recordings without re-encoding their video frames. WebM recordings are converted to H.264 MP4 only when needed for Telegram. Processing uses bounded stdin/stdout memory pipes, a 30-second deadline, no temporary files and no external media URLs. Telegram receives the clean copy, with no artwork. Vercel includes the server-only ffmpeg binary through functions.includeFiles. See [Telegram sendVideo](https://core.telegram.org/bots/api#sendvideo) and [ffmpeg-static](https://github.com/eugeneware/ffmpeg-static) for format and license details.
+The server remuxes MP4 camera recordings without re-encoding their video frames. WebM recordings are converted to H.264 MP4 only when needed for Telegram. Processing uses bounded stdin/stdout memory pipes, a 30-second deadline, no temporary files and no external media URLs. Telegram receives the clean copy with sound, with no artwork. Audio is encoded as AAC for Telegram compatibility. Vercel includes the server-only ffmpeg binary through functions.includeFiles. See [Telegram sendVideo](https://core.telegram.org/bots/api#sendvideo) and [ffmpeg-static](https://github.com/eugeneware/ffmpeg-static) for format and license details.
 
 A one-minute video at maximum camera quality cannot fit through Vercel's 4.5 MB request limit. High-quality local previews/downloads and a compressed Telegram copy are the supported compromise in this storage-free deployment. Larger original video uploads require a different upload architecture; merely raising the API's file-size validation cannot bypass Vercel's limit.
 

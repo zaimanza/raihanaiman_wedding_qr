@@ -14,6 +14,7 @@ export function CameraPage() {
   const { videoRef, status, error, mirrored, canSwitch, switchCamera, retry, onVideoReady } = useCamera();
   const [capturing, setCapturing] = useState(false);
   const [captureError, setCaptureError] = useState('');
+  const [requestingAudio, setRequestingAudio] = useState(false);
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const captureLock = useRef(false);
@@ -66,12 +67,22 @@ export function CameraPage() {
     }
   }
 
-  function startRecording() {
+  async function startRecording() {
     if (!held.current || captureLock.current || status !== 'ready' || !videoRef.current) return;
     captureLock.current = true;
     setCaptureError('');
+    setRequestingAudio(true);
+    let microphone: MediaStream | undefined;
     try {
-      const current = recordVideo(videoRef.current, mirrored);
+      microphone = await navigator.mediaDevices.getUserMedia({video:false, audio:{echoCancellation:true,noiseSuppression:true}});
+      if (!mounted.current || !held.current || document.visibilityState === 'hidden' || !videoRef.current) {
+        microphone.getTracks().forEach(track => track.stop());
+        captureLock.current = false;
+        if (mounted.current) setRequestingAudio(false);
+        return;
+      }
+      setRequestingAudio(false);
+      const current = recordVideo(videoRef.current, mirrored, microphone);
       session.current = current;
       setRecording(true);
       setElapsed(0);
@@ -93,7 +104,11 @@ export function CameraPage() {
     } catch {
       clearHold();
       captureLock.current = false;
-      setCaptureError('This browser can take photos, but cannot record video. Try Safari or Chrome ♡');
+      microphone?.getTracks().forEach(track => track.stop());
+      if (mounted.current) {
+        setRequestingAudio(false);
+        setCaptureError('Please allow microphone access to record a video with sound. Hold to try again ♡');
+      }
     }
   }
 
@@ -136,6 +151,7 @@ export function CameraPage() {
         </div>
       )}
       {captureError && <div className="camera-notice" role="alert">{captureError}</div>}
+      {requestingAudio && <div className="camera-notice" role="status">Opening your microphone…</div>}
       {recording && <div className="recording-status" role="status" aria-live="polite"><span aria-hidden="true" /> Recording · {elapsed}s / {MAX_RECORDING_MS / 1000}s</div>}
       {status === 'ready' && canRecord && !captureError && !recording && <p id="shutter-hint" className="shutter-hint">Tap for photo · Hold for video</p>}
       <div className="camera-controls">
@@ -146,7 +162,7 @@ export function CameraPage() {
           onClick={event => { if (event.detail === 0 && !held.current) { if (session.current) session.current.stop(); else void capture(); } }} disabled={status !== 'ready' || capturing}>
           <span className="shutter-core">{capturing && <span className="spinner" />}</span>
         </button>
-        <button className="switch-camera" type="button" aria-label="Switch front and rear cameras" onClick={switchCamera} disabled={status !== 'ready' || capturing || recording || !canSwitch}><Icon name="switch" /></button>
+        <button className="switch-camera" type="button" aria-label="Switch front and rear cameras" onClick={switchCamera} disabled={status !== 'ready' || capturing || recording || requestingAudio || !canSwitch}><Icon name="switch" /></button>
       </div>
       <div className="camera-flash" aria-hidden="true" />
     </main>

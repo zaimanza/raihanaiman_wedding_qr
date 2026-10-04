@@ -28,11 +28,11 @@ export function prepareVideo(video: Video): Promise<Buffer> {
       '-hide_banner', '-loglevel', 'error', '-nostdin', '-max_alloc', '16777216',
       '-protocol_whitelist', 'pipe', '-f', video.mime === 'video/mp4' ? 'mov' : 'matroska',
       '-threads', '1', '-max_pixels', '8000000', '-i', 'pipe:0',
-      '-map', '0:v:0', '-an', '-t', '60',
+      '-map', '0:v:0', '-map', '0:a:0?', '-t', '60', '-c:a', 'aac', '-b:a', '48k',
       ...(video.mime === 'video/mp4' ? ['-c:v', 'copy'] : [
         '-filter_threads', '1', '-vf', 'scale=1080:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,fps=24',
         '-c:v', 'libx264', '-threads', '1', '-preset', 'veryfast', '-crf', '18',
-        '-maxrate', '500k', '-bufsize', '1000k', '-pix_fmt', 'yuv420p',
+        '-maxrate', '430k', '-bufsize', '1000k', '-pix_fmt', 'yuv420p',
       ]),
       '-movflags', 'frag_keyframe+empty_moov+default_base_moof', '-f', 'mp4', 'pipe:1',
     ], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
