@@ -27,7 +27,7 @@ async (page) => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
     }
   });
-  const submit = page.getByRole('button', { name: 'Send our wish', exact: true });
+  const submit = page.getByRole('button', { name: 'Send your wish', exact: true });
   await submit.click();
   await page.getByText('Your photo is still here', { exact: false }).waitFor();
   assert((await page.getByRole('textbox').first().inputValue()) === 'Forever happy ❤️', 'failure retains wish');

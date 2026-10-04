@@ -125,7 +125,7 @@ export function SummaryPage() {
 
         <div className="summary-actions">
           <button className="submit-button" type="submit" disabled={phase !== 'idle' || !online || remaining > 0} aria-busy={phase === 'sending'}>
-            {phase === 'sending' ? <><span className="spinner" /> Sending with love…</> : phase === 'success' ? <><Icon name="check" /> Sent with love</> : remaining > 0 ? <>Try again in {remaining}s</> : <><span>Send our wish</span><Icon name="send" /></>}
+            {phase === 'sending' ? <><span className="spinner" /> Sending with love…</> : phase === 'success' ? <><Icon name="check" /> Sent with love</> : remaining > 0 ? <>Try again in {remaining}s</> : <><span>Send your wish</span><Icon name="send" /></>}
           </button>
         </div>
       </form>

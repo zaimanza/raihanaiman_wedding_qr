@@ -15,7 +15,7 @@ async (page) => {
       await page.waitForURL('**/summary');
       await page.getByRole('textbox').first().fill('Wishing you all the love in the world ♡');
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${scheme} summary ${width} has no overflow`);
-      const bounds = await page.getByRole('button', { name: 'Send our wish' }).boundingBox();
+      const bounds = await page.getByRole('button', { name: 'Send your wish' }).boundingBox();
       assert(bounds.x >= 0 && bounds.x + bounds.width <= width && bounds.y >= 0 && bounds.y + bounds.height <= height, `${scheme} summary ${width} keeps Submit reachable`);
       assert(await page.evaluate(() => Math.max(document.querySelector('img').naturalWidth, document.querySelector('img').naturalHeight) <= 1920), `${scheme} ${width} capture within 1920px`);
       if (width === 390) await page.screenshot({path:`output/playwright/summary-${scheme}.png`});
@@ -57,7 +57,7 @@ async (page) => {
   await page.getByRole('textbox').first().fill('Our offline wish');
   await page.context().setOffline(true);
   await page.getByText('You’re offline', {exact:false}).waitFor();
-  assert(await page.getByRole('button',{name:'Send our wish'}).isDisabled(), 'offline state prevents sending');
+  assert(await page.getByRole('button',{name:'Send your wish'}).isDisabled(), 'offline state prevents sending');
   await page.context().setOffline(false);
   await page.waitForFunction(() => !document.querySelector('.submit-button').disabled);
   assert(await page.getByRole('textbox').first().inputValue()==='Our offline wish', 'offline recovery preserves wish');
