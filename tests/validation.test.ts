@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { validatePhoto } from '../api/lib/_image'
-import { buildCaption, MAX_PHOTO_BYTES, normalizeWish, validateSubmissionId } from '../api/lib/_validation'
+import { buildCaption, MAX_PHOTO_BYTES, normalizeName, normalizeWish, validateSubmissionId } from '../api/lib/_validation'
 
 // Real, minimal static PNG fixture. These tests never contact Telegram or store guest data.
 const png = () => Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j5S8AAAAASUVORK5CYII=', 'base64')
@@ -78,9 +78,14 @@ describe('wish and submission validation', () => {
   })
   it('keeps the final caption within 1024 and formats Malaysia time without markup parsing', () => {
     const date = new Date('2026-10-03T12:42:00Z')
-    expect(buildCaption('<b>Love</b>', date)).toBe('💌 Wedding Wish\n\n<b>Love</b>\n\n03 October 2026 • 8:42 PM')
+    expect(buildCaption('<b>Love</b>', date)).toBe('💌 Wedding Wish\nFrom: Guest\n\n<b>Love</b>\n\n03 October 2026 • 8:42 PM')
     expect(buildCaption('', date)).toContain('Wedding Memory')
-    expect(buildCaption('x'.repeat(800), date).length).toBeLessThanOrEqual(1024)
+    expect(buildCaption('x'.repeat(800), date, 'N'.repeat(80)).length).toBeLessThanOrEqual(1024)
+  })
+  it('normalizes names and rejects oversized normalized values', () => {
+    expect(normalizeName('  Ａｉｍａｎ\r\n  Noor\u202e ')).toBe('Aiman Noor')
+    expect(normalizeName('')).toBe('Guest')
+    expect(() => normalizeName('x'.repeat(81))).toThrow('NAME_TOO_LONG')
   })
   it('accepts only a UUID v4 per captured photo', () => {
     expect(validateSubmissionId('A6E1648E-914C-4FA9-A75C-0A6EA087E4E9')).toBe('a6e1648e-914c-4fa9-a75c-0a6ea087e4e9')

@@ -42,7 +42,7 @@ export async function sendToTelegram(
 ): Promise<void> {
   const form = new FormData()
   form.append('chat_id', configuration.chatId)
-  form.append('caption', buildCaption(submission.wish))
+  form.append('caption', buildCaption(submission.wish, new Date(), submission.name))
   // A plain caption deliberately omits parse_mode: guests' punctuation cannot become markup.
   const media = submission.media
   if (media.kind === 'video') {

@@ -3,6 +3,8 @@ import type { CapturedMedia, MediaKind } from '../types/media';
 
 interface MemoryContextValue {
   media: CapturedMedia | null;
+  guestName: string;
+  setGuestName: (name: string) => void;
   wish: string;
   setWish: (wish: string) => void;
   saveMedia: (blob: Blob, kind: MediaKind, downloadBlob: Blob) => void;
@@ -13,6 +15,7 @@ const MemoryContext = createContext<MemoryContextValue | null>(null);
 
 export function MemoryProvider({ children }: { children: ReactNode }) {
   const [media, setMedia] = useState<CapturedMedia | null>(null);
+  const [guestName, setGuestName] = useState('');
   const [wish, setWish] = useState('');
   const urlRef = useRef<string | null>(null);
 
@@ -21,6 +24,7 @@ export function MemoryProvider({ children }: { children: ReactNode }) {
     urlRef.current = null;
     setMedia(null);
     setWish('');
+    setGuestName('');
   }, []);
 
   const saveMedia = useCallback((blob: Blob, kind: MediaKind, downloadBlob: Blob) => {
@@ -29,13 +33,14 @@ export function MemoryProvider({ children }: { children: ReactNode }) {
     urlRef.current = previewUrl;
     setMedia({ kind, blob, downloadBlob, previewUrl, submissionId: crypto.randomUUID() });
     setWish('');
+    setGuestName('');
   }, []);
 
   useEffect(() => () => {
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
   }, []);
 
-  return <MemoryContext.Provider value={{ media, wish, setWish, saveMedia, clearDraft }}>{children}</MemoryContext.Provider>;
+  return <MemoryContext.Provider value={{ media, guestName, setGuestName, wish, setWish, saveMedia, clearDraft }}>{children}</MemoryContext.Provider>;
 }
 
 export function useMemory() {

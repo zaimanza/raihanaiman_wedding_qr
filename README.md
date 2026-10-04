@@ -245,3 +245,7 @@ vercel.json               Deployment routing and security headers
 ```
 
 No service worker or offline cache is installed. Changes to the visual theme do not require changing Telegram credentials or adding a backend service.
+
+## Guest names
+
+The Summary form includes Your name above Your wedding wish. Names are optional, limited to 80 characters and normalized server-side. Telegram photo and video captions show From: followed by the name, or Guest if left blank. Names remain in browser memory with the wish and are kept on upload failure, then cleared after success or retake. No account is created.

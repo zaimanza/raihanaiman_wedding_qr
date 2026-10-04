@@ -7,10 +7,10 @@ import { useMemory } from '../context/MemoryContext';
 import { useOnline } from '../hooks/useOnline';
 import { SubmissionError, submitMemory } from '../services/submit';
 import { downloadMemory } from '../utils/download';
-import { MAX_WISH_LENGTH, normalizeWish } from '../utils/wish';
+import { MAX_NAME_LENGTH, MAX_WISH_LENGTH, normalizeName, normalizeWish } from '../utils/wish';
 
 export function SummaryPage() {
-  const { media, wish, setWish, clearDraft } = useMemory();
+  const { media, guestName, setGuestName, wish, setWish, clearDraft } = useMemory();
   const navigate = useNavigate();
   const online = useOnline();
   const [phase, setPhase] = useState<'idle' | 'sending' | 'success'>('idle');
@@ -69,6 +69,8 @@ export function SummaryPage() {
   async function submit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (lock.current || !media || !online || Date.now() < retryAt) return;
+    const name = normalizeName(guestName);
+    if (name.length > MAX_NAME_LENGTH) { setError("Please keep your name to 80 characters ♡"); return; }
     const normalized = normalizeWish(wish);
     if (normalized.length > MAX_WISH_LENGTH) {
       setError('A slightly shorter wish, please — up to 800 characters ♡');
@@ -78,7 +80,7 @@ export function SummaryPage() {
     setPhase('sending');
     setError('');
     try {
-      await submitMemory(media, normalized, website.current?.value || '');
+      await submitMemory(media, normalized, website.current?.value || '', name);
       if (mounted.current) {
         setPhase('success');
         try { downloadMemory(media); } catch { /* The manual Save control remains available. */ }
@@ -114,6 +116,11 @@ export function SummaryPage() {
                 : <><video className="captured-photo" src={media.previewUrl} playsInline muted preload="metadata" aria-label="Your recorded wedding memory" /><span className="video-play-badge" aria-hidden="true"><Icon name="play" /></span></>}
             </button>
           </figure>
+
+          <div className="wish-field name-field">
+            <label htmlFor="guest-name">Your name</label>
+            <input id="guest-name" name="guestName" type="text" autoComplete="name" value={guestName} onChange={event => setGuestName(event.target.value)} maxLength={MAX_NAME_LENGTH} placeholder="What should we call you?" disabled={phase !== 'idle'} />
+          </div>
 
           <div className="wish-field">
             <label htmlFor="wish">Your wedding wish</label>

@@ -44,6 +44,7 @@ describe('POST /api/submit', () => {
     const data = new FormData()
     data.append('photo', new Blob([photo], { type: 'image/png' }), 'memory.png')
     data.append('wish', wish)
+    data.append('name', '  Aiman Noor  ')
     data.append('submissionId', id)
     data.append('website', '')
     return data
@@ -65,6 +66,7 @@ describe('POST /api/submit', () => {
     const outbound = options?.body as FormData
     expect(outbound.get('chat_id')).toBe('-1001234567890')
     expect(outbound.get('caption')).toContain('Love\nforever ❤️')
+    expect(outbound.get('caption')).toContain('From: Aiman Noor')
     expect(outbound.has('parse_mode')).toBe(false)
     expect(Buffer.from(await (outbound.get('photo') as Blob).arrayBuffer())).toEqual(photo)
   })
@@ -80,7 +82,14 @@ describe('POST /api/submit', () => {
     expect(sent.get('supports_streaming')).toBe('true');
     expect(sent.get('video')).toMatchObject({type:'video/mp4'});
     expect(sent.get('caption')).toContain('Selamat pengantin baru');
+    expect(sent.get('caption')).toContain('From: Aiman Noor');
   });
+
+  it('supports older clients without a name and labels them Guest', async () => {
+    const data = form(); data.delete('name')
+    expect((await post(data)).status).toBe(200)
+    expect((telegram.mock.calls[0]![1]?.body as FormData).get('caption')).toContain('From: Guest')
+  })
 
   it('uploads a photo successfully without a wish', async () => {
     const data = form()
@@ -194,7 +203,7 @@ describe('POST /api/submit', () => {
   })
 
   it('rejects invalid wish length, malformed IDs and the bot honeypot', async () => {
-    for (const [name, value] of [['wish', 'x'.repeat(801)], ['submissionId', 'invalid'], ['website', 'https://spam.example']]) {
+    for (const [name, value] of [['name', 'x'.repeat(81)], ['wish', 'x'.repeat(801)], ['submissionId', 'invalid'], ['website', 'https://spam.example']]) {
       const data = form()
       data.set(name!, value!)
       expect((await post(data)).status).toBe(400)
@@ -215,6 +224,8 @@ describe('POST /api/submit', () => {
     expect((await post(form(id))).status).toBe(200)
     expect(telegram).toHaveBeenCalledTimes(1)
     expect((await post(form(id, 'A different wish'))).status).toBe(409)
+    const renamed = form(id); renamed.set('name', 'Another Guest')
+    expect((await post(renamed)).status).toBe(409)
     expect(telegram).toHaveBeenCalledTimes(1)
   })
 

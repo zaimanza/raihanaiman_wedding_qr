@@ -2,10 +2,11 @@ import busboy from 'busboy'
 import type { IncomingMessage } from 'node:http'
 import { validatePhoto, type Photo } from './_image.ts'
 import { validateVideo, type Video } from './_video.ts'
-import { invalidRequest, MAX_MEDIA_BYTES, MAX_REQUEST_BYTES, normalizeWish, SubmissionError, validateSubmissionId } from './_validation.ts'
+import { invalidRequest, MAX_MEDIA_BYTES, MAX_REQUEST_BYTES, normalizeName, normalizeWish, SubmissionError, validateSubmissionId } from './_validation.ts'
 
 export interface Submission {
   media: Photo | Video
+  name: string
   wish: string
   submissionId: string
 }
@@ -28,7 +29,7 @@ export function parseSubmission(request: IncomingMessage): Promise<Submission> {
         headers: request.headers,
         // Busboy emits "limit" when the size equals fileSize, so allow one sentinel byte;
         // validatePhoto independently enforces the inclusive maximum after parsing.
-        limits: { fileSize: MAX_MEDIA_BYTES + 1, files: 1, fields: 4, parts: 5, fieldSize: 4000, fieldNameSize: 40, headerPairs: 32 },
+        limits: { fileSize: MAX_MEDIA_BYTES + 1, files: 1, fields: 4, parts: 6, fieldSize: 4000, fieldNameSize: 40, headerPairs: 32 },
       })
     } catch {
       reject(invalidRequest())
@@ -81,7 +82,7 @@ export function parseSubmission(request: IncomingMessage): Promise<Submission> {
     parser.on('partsLimit', () => fail(invalidRequest()))
     parser.on('field', (name, value, info) => {
       if (finished) return
-      if (!['wish', 'submissionId', 'website'].includes(name) || fields.has(name) || info.nameTruncated || info.valueTruncated) {
+      if (!['wish', 'name', 'submissionId', 'website'].includes(name) || fields.has(name) || info.nameTruncated || info.valueTruncated) {
         fail(invalidRequest())
         return
       }
@@ -117,6 +118,7 @@ export function parseSubmission(request: IncomingMessage): Promise<Submission> {
         if (!photoBuffer || (fields.get('website') ?? '').trim()) throw invalidRequest()
         const submission: Submission = {
           media: fileKind === 'photo' ? validatePhoto(photoBuffer, photoMime) : validateVideo(photoBuffer, photoMime),
+          name: normalizeName(fields.get('name') ?? ''),
           wish: normalizeWish(fields.get('wish') ?? ''),
           submissionId: validateSubmissionId(fields.get('submissionId')),
         }

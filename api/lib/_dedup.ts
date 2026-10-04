@@ -21,7 +21,7 @@ export class SubmissionDeduplicator {
     const hash = createHash('sha256')
       .update(submission.media.kind).update('\0').update(submission.media.mime).update('\0')
       .update(submission.media.data).update('\0')
-      .update(submission.wish).digest('hex')
+      .update(submission.name).update('\0').update(submission.wish).digest('hex')
     const existing = this.entries.get(submission.submissionId)
     if (existing) {
       if (existing.hash !== hash) {

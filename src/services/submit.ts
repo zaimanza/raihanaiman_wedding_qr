@@ -9,10 +9,11 @@ export class SubmissionError extends Error {
   }
 }
 
-export async function submitMemory(media: CapturedMedia, wish: string, website: string) {
+export async function submitMemory(media: CapturedMedia, wish: string, website: string, guestName = '') {
   const data = new FormData();
   data.append(media.kind, media.blob, mediaFilename(media));
   data.append('wish', wish);
+  data.append('name', guestName);
   data.append('submissionId', media.submissionId);
   data.append('website', website);
   const controller = new AbortController();
