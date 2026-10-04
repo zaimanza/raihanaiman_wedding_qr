@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { submitMemory } from '../src/services/submit';
 import type { CapturedMedia } from '../src/types/media';
 
-const photo: CapturedMedia = { kind: 'photo', blob: new Blob(['test'], { type: 'image/jpeg' }), previewUrl: 'blob:memory', submissionId: 'db8dfc65-cb28-463f-99b9-ed02fa48a91d' };
+const photo: CapturedMedia = { kind: 'photo', blob: new Blob(['test'], { type: 'image/jpeg' }), downloadBlob: new Blob(['decorated keepsake'], {type:'image/jpeg'}), previewUrl: 'blob:memory', submissionId: 'db8dfc65-cb28-463f-99b9-ed02fa48a91d' };
 afterEach(() => vi.unstubAllGlobals());
 
 describe('submission client', () => {
@@ -12,6 +12,8 @@ describe('submission client', () => {
     await submitMemory(photo, 'With love ♡', '');
     const [url, request] = fetchMock.mock.calls[0]!;
     expect(url).toBe('/api/submit');
+    expect(await request.body.get('photo').text()).toBe('test');
+    expect(request.body.has('downloadBlob')).toBe(false);
     expect(request.body.get('wish')).toBe('With love ♡');
     expect(request.body.get('submissionId')).toBe(photo.submissionId);
     expect(request.signal).toBeInstanceOf(AbortSignal);
@@ -23,6 +25,7 @@ describe('submission client', () => {
     await submitMemory({...photo,kind:'video',blob:new Blob(['clip'],{type:'video/webm'})}, '', '');
     const body = fetchMock.mock.calls[0]![1].body as FormData;
     expect(body.has('photo')).toBe(false);
+    expect(await (body.get('video') as File).text()).toBe('clip');
     expect(body.get('video')).toMatchObject({type:'video/webm'});
   });
   it('does not expose upstream error messages', async () => {

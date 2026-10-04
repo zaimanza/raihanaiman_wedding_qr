@@ -7,10 +7,10 @@ export function mediaFilename(media: Pick<CapturedMedia, 'kind' | 'blob'>): stri
 
 /** Starts a browser download; phones may show their normal Save/Downloads prompt. */
 export function downloadMemory(media: CapturedMedia): void {
-  const url = URL.createObjectURL(media.blob);
+  const url = URL.createObjectURL(media.downloadBlob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = mediaFilename(media);
+  link.download = mediaFilename({kind: media.kind, blob: media.downloadBlob});
   document.body.append(link);
   link.click();
   link.remove();

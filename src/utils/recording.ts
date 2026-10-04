@@ -1,8 +1,10 @@
 import { getCaptureGeometry } from './image';
+import { weddingArt } from './weddingArt';
 
 export const HOLD_TO_RECORD_MS = 1000;
 export const MAX_RECORDING_MS = 60_000;
 export const MAX_VIDEO_BYTES = 3 * 1024 * 1024;
+const MAX_DOWNLOAD_BYTES = 12 * 1024 * 1024;
 
 export function recordingMimeType(): string | null {
   if (typeof MediaRecorder === 'undefined') return null;
@@ -13,65 +15,83 @@ export function recordingMimeType(): string | null {
 export interface RecordingSession {
   stop: () => void;
   cancel: () => void;
-  result: Promise<Blob>;
+  result: Promise<{blob: Blob; downloadBlob: Blob}>;
 }
 
-/** Records the same crop/mirror as the preview, without any decorative overlays. */
+/** Encode clean Telegram footage and a decorated download together, without replay/export delays. */
 export function recordVideo(video: HTMLVideoElement, mirrored: boolean): RecordingSession {
   const mimeType = recordingMimeType();
-  const canvas = document.createElement('canvas');
-  if (!mimeType || !canvas.captureStream) throw new Error('Video recording is not supported');
+  if (!mimeType || !HTMLCanvasElement.prototype.captureStream) throw new Error('Video recording is not supported');
   const bounds = video.getBoundingClientRect();
   const crop = getCaptureGeometry(video.videoWidth, video.videoHeight, bounds.width, bounds.height);
   const scale = Math.min(1, 720 / Math.max(crop.width, crop.height));
+  const canvas = document.createElement('canvas');
   canvas.width = Math.max(2, Math.round(crop.width * scale / 2) * 2);
   canvas.height = Math.max(2, Math.round(crop.height * scale / 2) * 2);
-  const context = canvas.getContext('2d', { alpha: false });
-  if (!context) throw new Error('Video recording is not supported');
+  const decorated = document.createElement('canvas');
+  decorated.width = canvas.width; decorated.height = canvas.height;
+  const context = canvas.getContext('2d', {alpha:false});
+  const downloadContext = decorated.getContext('2d', {alpha:false});
+  if (!context || !downloadContext) throw new Error('Video recording is not supported');
+  const art = weddingArt(canvas.width,canvas.height);
   function paint() {
     context!.setTransform(mirrored ? -1 : 1, 0, 0, 1, mirrored ? canvas.width : 0, 0);
-    context!.drawImage(video, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, canvas.width, canvas.height);
+    context!.drawImage(video,crop.sx,crop.sy,crop.sw,crop.sh,0,0,canvas.width,canvas.height);
+    downloadContext!.drawImage(canvas,0,0);
+    downloadContext!.drawImage(art,0,0);
   }
   paint();
-  const stream = canvas.captureStream(24);
-  let recorder: MediaRecorder;
-  try {
-    recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 300_000 });
-  } catch (error) {
-    stream.getTracks().forEach(track => track.stop());
-    canvas.width = canvas.height = 0;
-    throw error;
-  }
+  const streams: MediaStream[] = [];
+  const recorders: MediaRecorder[] = [];
+  const chunks: Blob[][] = [[],[]];
+  const sizes = [0,0];
+  let interval: number | undefined;
+  let timer: number | undefined;
   let cancelled = false;
-  let bytes = 0;
-  let paintFailed = false;
-  const chunks: Blob[] = [];
-  const interval = window.setInterval(() => {
-    try { paint(); } catch { paintFailed = true; stop(); }
-  }, 1000 / 24);
-  const timer = window.setTimeout(stop, MAX_RECORDING_MS);
+  let failed = false;
+  let finished = false;
+  let stopped = 0;
   function cleanup() {
-    window.clearInterval(interval);
-    window.clearTimeout(timer);
-    stream.getTracks().forEach(track => track.stop());
-    canvas.width = canvas.height = 0;
+    window.clearInterval(interval); window.clearTimeout(timer);
+    streams.forEach(stream => stream.getTracks().forEach(track => track.stop()));
+    canvas.width = canvas.height = decorated.width = decorated.height = art.width = art.height = 0;
   }
-  function stop() { if (recorder.state !== 'inactive') recorder.stop(); }
-  const result = new Promise<Blob>((resolve, reject) => {
-    recorder.ondataavailable = event => {
-      if (event.data.size) { chunks.push(event.data); bytes += event.data.size; }
-      // Leave room for the final encoder chunk, even if a browser ignores bitrate hints.
-      if (bytes >= MAX_VIDEO_BYTES - 512 * 1024) stop();
-    };
-    recorder.onerror = () => { cleanup(); chunks.length = 0; reject(new Error('Recording interrupted')); };
-    recorder.onstop = () => {
+  function stop() { recorders.forEach(recorder => {if (recorder.state !== 'inactive') recorder.stop();}); }
+  try {
+    for (const [index, target] of [canvas,decorated].entries()) {
+      const stream = target.captureStream(24); streams.push(stream);
+      recorders.push(new MediaRecorder(stream,{mimeType,videoBitsPerSecond: index === 0 ? 300_000 : 700_000}));
+    }
+  } catch (error) { cleanup(); throw error; }
+  const result = new Promise<{blob:Blob; downloadBlob:Blob}>((resolve,reject) => {
+    function finish() {
+      if (finished) return;
+      finished = true;
       cleanup();
-      const blob = new Blob(chunks, { type: recorder.mimeType.split(';')[0] });
-      chunks.length = 0;
-      if (cancelled || paintFailed || blob.size === 0 || blob.size > MAX_VIDEO_BYTES) reject(new Error('Recording unavailable'));
-      else resolve(blob);
-    };
-    try { recorder.start(250); } catch (error) { cleanup(); reject(error); }
+      const blobs = recorders.map((recorder,index) => new Blob(chunks[index],{type:recorder.mimeType.split(';')[0]}));
+      chunks.forEach(parts => {parts.length = 0;});
+      if (cancelled || failed || blobs.some(blob => !blob.size) || blobs[0].size > MAX_VIDEO_BYTES || blobs[1].size > MAX_DOWNLOAD_BYTES) reject(new Error('Recording unavailable'));
+      else resolve({blob:blobs[0],downloadBlob:blobs[1]});
+    }
+    recorders.forEach((recorder,index) => {
+      recorder.ondataavailable = event => {
+        if (event.data.size) {chunks[index].push(event.data); sizes[index] += event.data.size;}
+        const limit = index === 0 ? MAX_VIDEO_BYTES : MAX_DOWNLOAD_BYTES;
+        if (sizes[index] >= limit - 512 * 1024) stop();
+      };
+      recorder.onerror = () => {failed = true; stop();};
+      recorder.onstop = () => {if (++stopped === recorders.length) finish();};
+    });
+    try {
+      recorders.forEach(recorder => recorder.start(250));
+      interval = window.setInterval(() => {try {paint();} catch {failed = true; stop();}},1000 / 24);
+      timer = window.setTimeout(stop,MAX_RECORDING_MS);
+    } catch {
+      failed = true;
+      // Release a partially started encoder without retaining its chunks or tracks.
+      stop(); cleanup(); finished = true; chunks.forEach(parts => {parts.length = 0;});
+      reject(new Error('Recording unavailable'));
+    }
   });
-  return { stop, cancel: () => { cancelled = true; stop(); }, result };
+  return {stop,cancel:() => {cancelled = true; stop();},result};
 }

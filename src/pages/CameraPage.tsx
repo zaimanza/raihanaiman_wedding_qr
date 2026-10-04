@@ -4,6 +4,7 @@ import { Botanical } from '../components/Botanical';
 import { Icon } from '../components/Icon';
 import { useMemory } from '../context/MemoryContext';
 import { useCamera } from '../hooks/useCamera';
+import { decoratePhoto } from '../utils/weddingArt';
 import { capturePhoto } from '../utils/image';
 import { HOLD_TO_RECORD_MS, MAX_RECORDING_MS, recordingMimeType, recordVideo, type RecordingSession } from '../utils/recording';
 
@@ -52,8 +53,9 @@ export function CameraPage() {
     setCaptureError('');
     try {
       const blob = await capturePhoto(videoRef.current, mirrored);
+      const downloadBlob = await decoratePhoto(blob);
       if (!mounted.current) return;
-      saveMedia(blob, 'photo');
+      saveMedia(blob, 'photo', downloadBlob);
       navigate('/summary');
     } catch {
       if (mounted.current) setCaptureError('We missed that little moment. Please try taking it again ♡');
@@ -74,9 +76,9 @@ export function CameraPage() {
       setElapsed(0);
       const started = performance.now();
       clock.current = window.setInterval(() => setElapsed(Math.min(MAX_RECORDING_MS / 1000, Math.floor((performance.now() - started) / 1000))), 200);
-      void current.result.then(blob => {
+      void current.result.then(({blob, downloadBlob}) => {
         if (!mounted.current || session.current !== current) return;
-        saveMedia(blob, 'video');
+        saveMedia(blob, 'video', downloadBlob);
         navigate('/summary');
       }).catch(() => {
         if (mounted.current && session.current === current) setCaptureError('We couldn’t finish this video. Hold to try again ♡');

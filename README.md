@@ -18,7 +18,7 @@ A mobile-first wedding camera. Guests scan your QR code, capture a photo or shor
 
 The rear camera is preferred. Tap the shutter for a photo; hold it for at least one second to start a silent video, then release to finish. Videos stop automatically at 60 seconds or earlier if approaching the upload size limit. A camera switch appears when a second camera is available. Camera permission is the only device permission requested: recordings do not include microphone audio. Browsers without MediaRecorder/canvas recording still support photos.
 
-The Summary route requires a captured photo or video in React memory. Direct entry, another tab, a bookmark, or refreshing `/summary` returns to `/`. Retake discards the draft. Failed uploads preserve the photo and wish so the guest can retry. Successful delivery starts a download of the photo/video, shows the success state for two seconds, clears the draft, and restarts the camera. The browser controls its Downloads/Save prompt; this does not automatically write to a phone’s Photos gallery. A manual Save control is also available during the success state. Video previews open a modal with native play/pause controls and a circular close button.
+The Summary route requires a captured photo or video in React memory. Direct entry, another tab, a bookmark, or refreshing `/summary` returns to `/`. Retake discards the draft. Failed uploads preserve the photo and wish so the guest can retry. Successful delivery starts a download of the photo/video with the floral artwork, wedding names and date, shows the success state for two seconds, clears the draft, and restarts the camera. The browser controls its Downloads/Save prompt; this does not automatically write to a phone’s Photos gallery. A manual Save control is also available during the success state. Video previews open a modal with native play/pause controls and a circular close button.
 
 ## Architecture and privacy
 
@@ -35,7 +35,7 @@ Camera frame
 
 Photos and wishes are never written to localStorage, sessionStorage, IndexedDB, cookies, a database, or server temporary files. The preview uses a temporary object URL, which is released when its draft is discarded. There is no analytics, tracking integration, gallery, guest login, or offline submission queue. Refreshing or closing the page intentionally loses an unsent draft.
 
-The download is an intentional guest-owned copy; there is no stored gallery in the application. Telegram is the organizers’ persistent destination. Group/channel members with access can see the photos; manage membership and invitation links accordingly. Vercel may retain normal platform request metadata. Application logs contain safe operational categories rather than photo bytes, wishes, bot tokens, or Telegram request URLs.
+Downloads include the botanical corners and “Raihan & Aiman / Wedding · 11 Oct 2026” artwork. Telegram receives only the clean photo/video, without this artwork or camera controls. Both copies are held only in browser memory until the draft is cleared. The download is an intentional guest-owned copy; there is no stored gallery in the application. Telegram is the organizers’ persistent destination. Group/channel members with access can see the photos; manage membership and invitation links accordingly. Vercel may retain normal platform request metadata. Application logs contain safe operational categories rather than photo bytes, wishes, bot tokens, or Telegram request URLs.
 
 ## Run locally
 
@@ -186,7 +186,7 @@ Telegram's published guidance advises roughly one message per second to a single
 
 ## Video processing
 
-The browser records the visible crop at up to a 720px long edge and 24fps, targeting 0.3Mbps and a maximum of 60 seconds. The same memory-only draft and retry/navigation rules apply to photos and videos. The uploaded multipart field is either `photo` or `video`, never both.
+The browser records the visible crop at up to a 720px long edge and 24fps, targeting 0.3Mbps and a maximum of 60 seconds. A second canvas encoder creates the decorated keepsake at the same time (up to 0.7Mbps); no full-length replay is needed after submission. Only the clean 0.3Mbps copy is uploaded to Telegram. The same memory-only draft and retry/navigation rules apply to photos and videos. The uploaded multipart field is either `photo` or `video`, never both.
 
 A server-only `ffmpeg-static` dependency decodes and normalizes videos into H.264 MP4 for Telegram’s `sendVideo`. This supports browsers that record WebM without sending guests a document attachment. Processing uses bounded stdin/stdout memory pipes, a 30-second deadline, no temporary files, and no external media URLs. The decoder restricts pixel count and the output duration, resolution, bitrate, and file size. Vercel includes the platform binary via `functions.includeFiles`; it is excluded from the frontend bundle. See [Telegram sendVideo](https://core.telegram.org/bots/api#sendvideo) and [ffmpeg-static](https://github.com/eugeneware/ffmpeg-static) for its binary and license details.
 

@@ -5,7 +5,7 @@ interface MemoryContextValue {
   media: CapturedMedia | null;
   wish: string;
   setWish: (wish: string) => void;
-  saveMedia: (blob: Blob, kind: MediaKind) => void;
+  saveMedia: (blob: Blob, kind: MediaKind, downloadBlob: Blob) => void;
   clearDraft: () => void;
 }
 
@@ -23,11 +23,11 @@ export function MemoryProvider({ children }: { children: ReactNode }) {
     setWish('');
   }, []);
 
-  const saveMedia = useCallback((blob: Blob, kind: MediaKind) => {
+  const saveMedia = useCallback((blob: Blob, kind: MediaKind, downloadBlob: Blob) => {
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
     const previewUrl = URL.createObjectURL(blob);
     urlRef.current = previewUrl;
-    setMedia({ kind, blob, previewUrl, submissionId: crypto.randomUUID() });
+    setMedia({ kind, blob, downloadBlob, previewUrl, submissionId: crypto.randomUUID() });
     setWish('');
   }, []);
 
