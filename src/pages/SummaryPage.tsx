@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useBlocker, useNavigate } from 'react-router-dom';
 import { Botanical } from '../components/Botanical';
 import { Icon } from '../components/Icon';
+import { PhotoPreview } from '../components/PhotoPreview';
 import { usePhoto } from '../context/PhotoContext';
 import { useOnline } from '../hooks/useOnline';
 import { SubmissionError, submitMemory } from '../services/submit';
@@ -13,11 +14,13 @@ export function SummaryPage() {
   const online = useOnline();
   const [phase, setPhase] = useState<'idle' | 'sending' | 'success'>('idle');
   const [error, setError] = useState('');
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [retryAt, setRetryAt] = useState(0);
   const [now, setNow] = useState(Date.now());
   const lock = useRef(false);
   const mounted = useRef(true);
   const website = useRef<HTMLInputElement>(null);
+  const photoButton = useRef<HTMLButtonElement>(null);
   const blocker = useBlocker(phase === 'sending');
   const remaining = Math.max(0, Math.ceil((retryAt - now) / 1000));
 
@@ -102,7 +105,9 @@ export function SummaryPage() {
           </div>
 
           <figure className="photo-frame">
-            <img className="captured-photo" src={photo.previewUrl} alt="Your captured wedding memory" />
+            <button ref={photoButton} type="button" className="photo-preview-trigger" aria-label="Enlarge photo" aria-haspopup="dialog" aria-controls="photo-preview" onClick={() => setPreviewOpen(true)} disabled={phase !== 'idle'}>
+              <img className="captured-photo" src={photo.previewUrl} alt="Your captured wedding memory" />
+            </button>
           </figure>
 
           <div className="wish-field">
@@ -124,6 +129,8 @@ export function SummaryPage() {
           </button>
         </div>
       </form>
+
+      {previewOpen && <PhotoPreview src={photo.previewUrl} onClose={() => setPreviewOpen(false)} returnFocusTo={photoButton.current} />}
 
       {phase === 'success' && (
         <div className="success-overlay" role="status" aria-live="polite">

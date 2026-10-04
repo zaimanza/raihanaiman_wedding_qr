@@ -84,6 +84,7 @@ npx @playwright/cli -s=wedding open about:blank
 npx @playwright/cli -s=wedding run-code --filename=scripts/browser/setup-camera.js
 npx @playwright/cli -s=wedding run-code --filename=scripts/browser/check-flow.js
 npx @playwright/cli -s=wedding run-code --filename=scripts/browser/check-frame.js
+npx @playwright/cli -s=wedding run-code --filename=scripts/browser/check-preview.js
 npx @playwright/cli -s=wedding run-code --filename=scripts/browser/check-layout.js
 npx @playwright/cli -s=wedding close
 ```

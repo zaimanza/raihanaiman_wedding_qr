@@ -21,7 +21,8 @@
   --camera-bg: #17251e;
   --camera-ink: #f8f5e7;
   --camera-muted: #d8decc;
-  --camera-botanical: #e0e5cc;
+  --camera-botanical: #f5f2e7;
+  --preview-backdrop: rgb(9 16 12 / 96%);
   --camera-glass: rgb(24 39 30 / 33%);
   --camera-glass-border: rgb(248 245 231 / 24%);
   --camera-shade-clear: rgb(0 0 0 / 0%);

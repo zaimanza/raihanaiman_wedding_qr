@@ -14,9 +14,10 @@ button svg { width: 22px; height: 22px; flex-shrink: 0; }
 .camera-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .camera-preview.is-mirrored { transform: scaleX(-1); }
 .camera-shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to bottom, var(--camera-shade-light), var(--camera-shade-clear) 20%, var(--camera-shade-clear) 60%, var(--camera-shade-deep)); }
-.camera-botanical { z-index: 2; color: var(--camera-botanical); width: clamp(62px, 16vw, 92px); opacity: .44; }
+.camera-botanical { z-index: 2; color: var(--camera-botanical); width: clamp(62px, 16vw, 92px); opacity: .7; filter: drop-shadow(0 1px 1px var(--shutter-shadow)); }
+.camera-botanical g { stroke-width: 1.35; }
 .camera-botanical-top { top: calc(14px + env(safe-area-inset-top)); left: calc(13px + env(safe-area-inset-left)); transform: rotate(175deg); }
-.camera-botanical-bottom { right: calc(9px + env(safe-area-inset-right)); bottom: calc(136px + env(safe-area-inset-bottom)); transform: rotate(-15deg); opacity: .32; }
+.camera-botanical-bottom { right: calc(9px + env(safe-area-inset-right)); bottom: calc(136px + env(safe-area-inset-bottom)); transform: rotate(-15deg); opacity: .62; }
 .camera-wedding-title { position: absolute; z-index: 2; top: calc(16px + env(safe-area-inset-top)); left: calc(92px + env(safe-area-inset-left)); right: calc(92px + env(safe-area-inset-right)); display: flex; flex-direction: column; align-items: center; text-align: center; font: normal clamp(18px, 4.8vw, 26px)/1.25 var(--font-display); color: var(--camera-ink); text-shadow: 0 1px 4px var(--camera-bg); pointer-events: none; }
 .camera-wedding-title small { margin-top: 5px; font: 500 10px/1.5 var(--font-ui); letter-spacing: .8px; opacity: .9; }
 .camera-specks { position: absolute; inset: 0; pointer-events: none; }
@@ -56,6 +57,13 @@ button svg { width: 22px; height: 22px; flex-shrink: 0; }
 .couple-name span { color: var(--gold); padding: 0 3px; }
 .photo-frame { width: fit-content; max-width: 100%; margin: 0 auto 22px; padding: 6px; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); box-shadow: 0 8px 24px var(--shadow); }
 .captured-photo { display: block; width: auto; height: auto; max-width: 100%; max-height: min(36vh, 320px); max-height: min(36dvh, 320px); object-fit: contain; border-radius: 9px; background: var(--paper-soft); }
+.photo-preview-trigger { display: block; max-width: 100%; padding: 0; border: 0; border-radius: 9px; background: transparent; cursor: zoom-in; }
+.photo-preview-dialog { position: fixed; inset: 0; width: 100%; max-width: none; height: 100vh; height: 100dvh; max-height: none; margin: 0; padding: calc(76px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left)); border: 0; background: var(--preview-backdrop); color: var(--camera-ink); }
+.photo-preview-dialog[open] { display: grid; grid-template-rows: minmax(0, 1fr); place-items: center; }
+.photo-preview-dialog::backdrop { background: var(--preview-backdrop); }
+.photo-preview-image { display: block; width: 100%; height: 100%; min-height: 0; object-fit: contain; }
+.photo-preview-close { position: absolute; top: calc(16px + env(safe-area-inset-top)); right: calc(16px + env(safe-area-inset-right)); width: 48px; height: 48px; display: grid; place-items: center; padding: 0; border: 1px solid var(--camera-glass-border); border-radius: 50%; background: var(--camera-glass); color: var(--camera-ink); }
+.photo-preview-close svg { width: 24px; height: 24px; }
 .eyebrow { display: block; font-size: 9px; font-weight: 600; letter-spacing: 2.2px; color: var(--muted); }
 .wish-field label { display: block; font-size: 12px; font-weight: 500; margin-bottom: 9px; }
 .wish-field label span { color: var(--muted); font-weight: 400; margin-left: 4px; }
