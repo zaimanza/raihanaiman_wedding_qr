@@ -55,7 +55,7 @@ export function SummaryPage() {
     const timer = window.setTimeout(() => {
       clearDraft();
       navigate('/', { replace: true });
-    }, 1600);
+    }, 2000);
     return () => window.clearTimeout(timer);
   }, [phase, clearDraft, navigate]);
 
