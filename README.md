@@ -2,6 +2,13 @@
 
 A mobile-first wedding camera. Guests scan your QR code, capture a photo or short video, optionally leave a wish, and send it to your private Telegram collection. Guests never need Telegram, an account, or contact details.
 
+Guests can also tap **Upload**, to the left of the camera shutter, to choose up to ten existing photos and videos. On `/upload`, they can add, preview and remove files, then tap the bottom **Upload** button to review them on `/upload-summary`, write their name and wish, and tap **Send your wish**. Both submission paths use the existing “Sent with love” confirmation and return to a fresh camera. Uploaded files stay on the device until the wish is sent; they are not downloaded again after sending.
+
+
+Uploads accept JPEG, PNG and WebP photos (up to 25 MiB and 20 megapixels before preparation), browser-decodable still HEIC/HEIF photos, and MP4/WebM videos up to 4 MiB, 60 seconds and 8 megapixels. Photos with an aspect ratio above 20:1 are rejected to match the delivery limits. Photos are resized/compressed only when needed for the API budget. The upload page keeps the original composition without adding camera artwork. Normal gallery MP4 files with trailing movie metadata are relocated in bounded server memory for FFmpeg, preserving their video and audio without temporary files. Each memory is submitted separately with the same name and wish, keeping every API request below the existing limit. A partial failure retains acknowledgements in the draft: retry sends only the remaining files, while the name, wish and selection stay locked for consistent captions. Duplicate prevention retains the existing same-instance limitations described below.
+
+**Edit uploads** returns through history and preserves the selection, name and wish. Direct entry or a refresh of `/upload-summary` returns to the empty upload page. Removing a file, leaving for the camera, completing the flow or unmounting the app releases the draft’s object URLs. Unsent media is still memory-only and is lost on refresh or closing the page.
+
 [GitHub repository](https://github.com/zaimanza/raihanaiman_wedding_qr)
 
 [Live wedding camera](https://raihanaiman-wedding-qr.vercel.app/) — use this HTTPS address as the destination for your wedding QR code.
@@ -92,6 +99,15 @@ npx @playwright/cli -s=wedding close
 ```
 
 These callbacks use a clearly labelled simulated camera stream and controlled upload responses, exercise memory/navigation/cleanup/error handling, and check light/dark layouts at phone, tablet, desktop, and landscape sizes. They use the default local URL `http://localhost:5173`. They do not send test photos to Telegram. Screenshots stay in ignored `output/playwright/`. Actual phone cameras and Telegram delivery still require the live checks below.
+
+The upload browser check runs in a separate session with camera permission denied and all submissions intercepted. It includes real decoded JPEG/MP4/WebM fixtures, a QR photo, and a QR visible for only one late video frame:
+
+```sh
+node scripts/browser/make-upload-fixtures.mjs
+npx @playwright/cli -s=wedding-upload open about:blank
+npx @playwright/cli -s=wedding-upload run-code --filename=scripts/browser/check-upload.js
+npx @playwright/cli -s=wedding-upload close
+```
 
 ## Telegram setup
 
@@ -250,3 +266,5 @@ No service worker or offline cache is installed. Changes to the visual theme do 
 ## Guest names
 
 The Summary form includes Your name above Your wedding wish. Names are optional, limited to 80 characters and normalized server-side. Telegram photo and video captions show From: followed by the name, or Guest if left blank. Names remain in browser memory with the wish and are kept on upload failure, then cleared after success or retake. No account is created.
+
+Uploaded photos and videos are not scanned or rejected for QR codes. File format, size, resolution and video duration limits still apply.

@@ -9,6 +9,7 @@ import { SubmissionDeduplicator } from '../api/lib/_dedup'
 import { parseSubmission } from '../api/lib/_multipart'
 import type { SafeLogger } from '../api/lib/_telegram'
 import { MAX_PHOTO_BYTES, MAX_REQUEST_BYTES } from '../api/lib/_validation'
+import { galleryVideoFixture } from './helpers/gallery-video'
 
 const photo = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j5S8AAAAASUVORK5CYII=', 'base64')
 const fakeToken = '123456789:fakeTokenForTestsOnlyNeverUsedOnline'
@@ -84,6 +85,32 @@ describe('POST /api/submit', () => {
     expect(sent.get('caption')).toContain('Selamat pengantin baru');
     expect(sent.get('caption')).toContain('From: Aiman Noor');
   });
+
+  it('accepts a gallery MP4 with trailing movie metadata and forwards playable footage', async () => {
+    const data = form()
+    data.delete('photo')
+    data.append('video', new Blob([new Uint8Array(galleryVideoFixture())], { type: 'video/mp4' }), 'gallery.mp4')
+    expect((await post(data)).status).toBe(200)
+    const sent = telegram.mock.calls[0]![1]?.body as FormData
+    const bytes = Buffer.from(await (sent.get('video') as Blob).arrayBuffer())
+    const hashes = execFileSync(ffmpeg!, ['-hide_banner', '-loglevel', 'error', '-i', 'pipe:0', '-map', '0:v:0', '-f', 'framemd5', 'pipe:1'], { input: bytes }).toString()
+    expect(hashes.split('\n').filter(line => line && !line.startsWith('#'))).toHaveLength(48)
+    expect(sent.get('caption')).toContain('From: Aiman Noor')
+  })
+
+  it('rejects a malformed gallery MP4 before contacting Telegram', async () => {
+    const bytes = galleryVideoFixture()
+    const tableType = bytes.indexOf(Buffer.from('stco'))
+    expect(tableType).toBeGreaterThan(0)
+    bytes.writeUInt32BE(bytes.length + 1, tableType + 12)
+    const data = form()
+    data.delete('photo')
+    data.append('video', new Blob([new Uint8Array(bytes)], { type: 'video/mp4' }), 'broken.mp4')
+    const response = await post(data)
+    expect(response.status).toBe(422)
+    expect(await response.json()).toMatchObject({ code: 'INVALID_VIDEO' })
+    expect(telegram).not.toHaveBeenCalled()
+  })
 
   it('supports older clients without a name and labels them Guest', async () => {
     const data = form(); data.delete('name')

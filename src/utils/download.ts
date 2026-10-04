@@ -1,7 +1,9 @@
 import type { CapturedMedia } from '../types/media';
 
 export function mediaFilename(media: Pick<CapturedMedia, 'kind' | 'blob'>): string {
-  const extension = media.kind === 'photo' ? 'jpg' : media.blob.type.startsWith('video/mp4') ? 'mp4' : 'webm';
+  const extension = media.kind === 'photo'
+    ? media.blob.type === 'image/png' ? 'png' : media.blob.type === 'image/webp' ? 'webp' : 'jpg'
+    : media.blob.type.startsWith('video/mp4') ? 'mp4' : 'webm';
   return `raihan-aiman-${Date.now()}.${extension}`;
 }
 

@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
 import ffmpegPath from 'ffmpeg-static'
+import { mp4ForPipe } from './_mp4.ts'
 import { invalidRequest, MAX_MEDIA_BYTES, SubmissionError } from './_validation.ts'
 
 export interface Video {
@@ -56,6 +57,7 @@ async function videoDuration(video: Video, binary: string): Promise<number> {
 export async function prepareVideo(video: Video): Promise<Buffer> {
   const binary = ffmpegPath
   if (!binary) return Promise.reject(new SubmissionError(503, 'UNAVAILABLE', 'Video sending is unavailable just now. Please try again shortly ♡'))
+  const input = video.mime === 'video/mp4' ? mp4ForPipe(video.data) : video.data
   const duration = video.mime === 'video/webm' ? await videoDuration(video, binary) : 60;
   // Spend the available bytes on detail for short clips, reserving audio/container room.
   const bitrateKbps = Math.max(400, Math.min(2500, Math.floor((3.5 * 1024 * 1024 * 8 / duration - 64_000) / 1000)));
@@ -112,6 +114,6 @@ export async function prepareVideo(video: Video): Promise<Buffer> {
       chunks = []
       resolve(result)
     })
-    process.stdin.end(video.data)
+    process.stdin.end(input)
   })
 }

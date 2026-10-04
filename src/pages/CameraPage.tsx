@@ -155,6 +155,7 @@ export function CameraPage() {
       {recording && <div className="recording-status" role="status" aria-live="polite"><span aria-hidden="true" /> Recording · {elapsed}s / {MAX_RECORDING_MS / 1000}s</div>}
       {status === 'ready' && canRecord && !captureError && !recording && <p id="shutter-hint" className="shutter-hint">Tap for photo · Hold for video</p>}
       <div className="camera-controls">
+        <button className="camera-upload" type="button" aria-label="Upload photos and videos" onClick={() => navigate('/upload')} disabled={capturing || recording || requestingAudio}><Icon name="upload" /><span>Upload</span></button>
         <button className={`shutter${recording ? ' is-recording' : ''}`} type="button" aria-label={recording ? 'Stop recording' : capturing ? 'Preparing your memory' : 'Take photo'} aria-describedby={canRecord && !recording && !captureError ? 'shutter-hint' : undefined}
           onPointerDown={pointerDown} onPointerUp={releaseShutter} onPointerCancel={cancelRecording}
           onLostPointerCapture={() => { if (held.current) cancelRecording(); }} onContextMenu={event => event.preventDefault()}

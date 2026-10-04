@@ -1,4 +1,4 @@
-type IconName = 'switch' | 'arrow' | 'heart' | 'check' | 'camera' | 'send' | 'retry' | 'close' | 'play';
+type IconName = 'switch' | 'arrow' | 'heart' | 'check' | 'camera' | 'send' | 'retry' | 'close' | 'play' | 'upload' | 'plus';
 
 export function Icon({ name, className = '' }: { name: IconName; className?: string }) {
   return (
@@ -12,6 +12,8 @@ export function Icon({ name, className = '' }: { name: IconName; className?: str
       {name === 'camera' && <><path d="m8 5 1.5-2h5L16 5h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" /><circle cx="12" cy="12" r="4" /></>}
       {name === 'send' && <><path d="m21 3-7 18-4-7-7-4 18-7ZM10 14l11-11" /></>}
       {name === 'retry' && <><path d="M3 11a9 9 0 1 1 2.6 7M3 4v7h7" /></>}
+      {name === 'upload' && <><path d="M12 16V3m-5 5 5-5 5 5M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5" /></>}
+      {name === 'plus' && <path d="M12 5v14M5 12h14" />}
     </svg>
   );
 }
