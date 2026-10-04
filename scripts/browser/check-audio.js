@@ -7,6 +7,7 @@ async (page) => {
   window.fetch=async(input,init)=>{if(input==='/api/submit'){window.__cleanAudio=init.body.get('video');return Response.json({ok:true});}return original(input,init);};
  });
  await page.goto('http://localhost:5173/');
+ assert(await page.evaluate(()=>!document.featurePolicy||document.featurePolicy.allowsFeature('microphone')),'deployment policy permits microphone access');
  await page.setViewportSize({width:390,height:844});
  await page.waitForFunction(()=>document.querySelector('.shutter')?.disabled===false);
  const hold=async()=>{const box=await page.locator('.shutter').boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.waitForTimeout(2800);await page.mouse.up();};
