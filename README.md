@@ -4,6 +4,8 @@ A mobile-first wedding camera. Guests scan your QR code, capture a photo, option
 
 [GitHub repository](https://github.com/zaimanza/raihanaiman_wedding_qr)
 
+[Live wedding camera](https://raihanaiman-wedding-qr.vercel.app/) — use this HTTPS address as the destination for your wedding QR code.
+
 ## The guest experience
 
 ```text
@@ -38,6 +40,8 @@ Telegram is the final persistent destination. Group/channel members with access 
 ## Run locally
 
 Use **Node.js 22** and npm.
+
+If this checkout already has a configured `.env.local`, keep that file and run `npm run dev`. The setup commands below are for a fresh clone.
 
 ```sh
 git clone https://github.com/zaimanza/raihanaiman_wedding_qr.git
